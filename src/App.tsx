@@ -1,122 +1,146 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores/auth.store'
 
-function App() {
-  const [count, setCount] = useState(0)
+// Auth
+import { LoginPage } from '@/pages/auth/LoginPage'
+import { RegisterPage } from '@/pages/auth/RegisterPage'
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+// Landing
+import { LandingPage } from '@/pages/LandingPage'
 
-      <div className="ticks"></div>
+// Layouts
+import { CiudadanoLayout } from '@/layouts/CiudadanoLayout'
+import { TecnicoLayout } from '@/layouts/TecnicoLayout'
+import { SecretariaLayout } from '@/layouts/SecretariaLayout'
+import { FinancieroLayout } from '@/layouts/FinancieroLayout'
+import { AdminLayout } from '@/layouts/AdminLayout'
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+// Ciudadano
+import { CiudadanoDashboard } from '@/pages/ciudadano/CiudadanoDashboard'
+import { MisSolicitudes } from '@/pages/ciudadano/MisSolicitudes'
+import { NuevaSolicitud } from '@/pages/ciudadano/NuevaSolicitud'
+import { DetalleSolicitud } from '@/pages/ciudadano/DetalleSolicitud'
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+// Técnico
+import { TecnicoDashboard } from '@/pages/tecnico/TecnicoDashboard'
+import { BandejaTecnico } from '@/pages/tecnico/BandejaTecnico'
+import { InspeccionPage } from '@/pages/tecnico/InspeccionPage'
+
+// Secretaria
+import { SecretariaDashboard } from '@/pages/secretaria/SecretariaDashboard'
+import { BandejaSecretaria } from '@/pages/secretaria/BandejaSecretaria'
+import { DetalleSolicitudSecretaria } from '@/pages/secretaria/DetalleSolicitudSecretaria'
+import { SecretariaTecnicos } from '@/pages/secretaria/SecretariaTecnicos'
+
+// Financiero
+import { FinancieroDashboard } from '@/pages/financiero/FinancieroDashboard'
+import { CobrosPendientes } from '@/pages/financiero/CobrosPendientes'
+import { DetalleCobroPage } from '@/pages/financiero/DetalleCobroPage'
+
+// Admin
+import { AdminDashboard } from '@/pages/admin/AdminDashboard'
+import { AdminUsuarios } from '@/pages/admin/AdminUsuarios'
+import { AdminSolicitudes } from '@/pages/admin/AdminSolicitudes'
+import { AdminAuditoria } from '@/pages/admin/AdminAuditoria'
+import { AdminDetalleSolicitud } from '@/pages/admin/AdminDetalleSolicitud'
+
+// Mapa de redirección por rol
+const ROLE_REDIRECT: Record<string, string> = {
+  CIUDADANO:   '/ciudadano',
+  INVITADO:    '/ciudadano',
+  TECNICO:     '/tecnico',
+  SECRETARIA:  '/secretaria',
+  FINANCIERO:  '/financiero',
+  SUPERADMIN:  '/admin',
 }
 
-export default App
+// Guard de rol
+function RequireRole({ allowed, children }: { allowed: string[]; children: React.ReactNode }) {
+  const { user, accessToken } = useAuthStore()
+  if (!accessToken) return <Navigate to="/login" replace />
+  if (!allowed.includes(user?.role ?? '')) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+// Redirección inteligente al portal correcto al hacer login
+function RoleRedirect() {
+  const { user } = useAuthStore()
+  const dest = ROLE_REDIRECT[user?.role ?? ''] ?? '/ciudadano'
+  return <Navigate to={dest} replace />
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Públicas */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegisterPage />} />
+
+        {/* ---- Portal Ciudadano ---- */}
+        <Route
+          path="/ciudadano"
+          element={<RequireRole allowed={['CIUDADANO', 'INVITADO']}><CiudadanoLayout /></RequireRole>}
+        >
+          <Route index element={<CiudadanoDashboard />} />
+          <Route path="solicitudes" element={<MisSolicitudes />} />
+          <Route
+            path="solicitudes/nueva"
+            element={<RequireRole allowed={['CIUDADANO', 'INVITADO']}><NuevaSolicitud /></RequireRole>}
+          />
+          <Route path="solicitudes/:id" element={<DetalleSolicitud />} />
+        </Route>
+
+        {/* ---- Portal Secretaría ---- */}
+        <Route
+          path="/secretaria"
+          element={<RequireRole allowed={['SECRETARIA']}><SecretariaLayout /></RequireRole>}
+        >
+          <Route index element={<SecretariaDashboard />} />
+          <Route path="bandeja" element={<BandejaSecretaria />} />
+          <Route path="bandeja/:id" element={<DetalleSolicitudSecretaria />} />
+          <Route path="tecnicos" element={<SecretariaTecnicos />} />
+          <Route path="historial" element={<BandejaSecretaria />} />
+        </Route>
+
+        {/* ---- Portal Técnico ---- */}
+        <Route
+          path="/tecnico"
+          element={<RequireRole allowed={['TECNICO']}><TecnicoLayout /></RequireRole>}
+        >
+          <Route index element={<TecnicoDashboard />} />
+          <Route path="bandeja" element={<BandejaTecnico />} />
+          <Route path="bandeja/:id" element={<InspeccionPage />} />
+        </Route>
+
+        {/* ---- Portal Financiero ---- */}
+        <Route
+          path="/financiero"
+          element={<RequireRole allowed={['FINANCIERO']}><FinancieroLayout /></RequireRole>}
+        >
+          <Route index element={<FinancieroDashboard />} />
+          <Route path="cobros" element={<CobrosPendientes />} />
+          <Route path="cobros/:id" element={<DetalleCobroPage />} />
+          <Route path="historial" element={<CobrosPendientes />} />
+          <Route path="liquidados" element={<CobrosPendientes />} />
+        </Route>
+
+        {/* ---- Admin (SuperAdmin) ---- */}
+        <Route
+          path="/admin"
+          element={<RequireRole allowed={['SUPERADMIN']}><AdminLayout /></RequireRole>}
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="usuarios" element={<AdminUsuarios />} />
+          <Route path="solicitudes" element={<AdminSolicitudes />} />
+          <Route path="solicitudes/:id" element={<AdminDetalleSolicitud />} />
+          <Route path="auditoria" element={<AdminAuditoria />} />
+        </Route>
+
+        {/* Catch-all → redirección inteligente */}
+        <Route path="*" element={<RoleRedirect />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}

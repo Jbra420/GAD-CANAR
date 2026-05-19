@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 type Props = {
-	children: JSX.Element;
+	children: React.ReactElement;
 	allowedRoles?: string[];
 };
 
