@@ -274,19 +274,40 @@ async function handleMockSimulation(config: any): Promise<any> {
   if (url === '/users/dashboard/stats') {
     const list = MockDb.getSolicitudes()
     const users = MockDb.getUsers()
+    
+    const total = users.length
+    const tecnicos = users.filter(u => u.role === 'TECNICO' && u.activo).length
+    const ciudadanos = users.filter(u => u.role === 'CIUDADANO' || u.role === 'INVITADO').length
+
+    // Mapear conteo de solicitudes por su estado
+    const solicitudesMap: Record<string, number> = {
+      BORRADOR: 0,
+      PENDIENTE_SECRETARIA: 0,
+      OBSERVADO: 0,
+      PENDIENTE_TECNICO: 0,
+      INSPECCION: 0,
+      PAGO_PENDIENTE: 0,
+      PAGADO: 0,
+      APROBADO: 0,
+      NEGADO: 0
+    }
+
+    list.forEach(s => {
+      if (s.estado && typeof solicitudesMap[s.estado] === 'number') {
+        solicitudesMap[s.estado]++
+      } else if (s.estado) {
+        solicitudesMap[s.estado] = 1
+      }
+    })
+
     return {
       data: {
-        success: true,
-        data: {
-          totalUsuarios: users.length,
-          totalSolicitudes: list.length,
-          pendientesSecretaria: list.filter((s) => s.estado === 'PENDIENTE_SECRETARIA').length,
-          pendientesTecnico: list.filter((s) => s.estado === 'PENDIENTE_TECNICO').length,
-          enInspeccion: list.filter((s) => s.estado === 'INSPECCION').length,
-          pagosPendientes: list.filter((s) => s.estado === 'PAGO_PENDIENTE').length,
-          aprobados: list.filter((s) => s.estado === 'APROBADO').length,
-          negados: list.filter((s) => s.estado === 'NEGADO').length,
-        }
+        usuarios: {
+          total,
+          tecnicos,
+          ciudadanos
+        },
+        solicitudes: solicitudesMap
       }
     }
   }
