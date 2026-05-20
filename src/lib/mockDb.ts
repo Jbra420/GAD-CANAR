@@ -62,7 +62,7 @@ const SOLICITUDES_INICIALES: Solicitud[] = [
       nombre: 'Juan Carlos',
       apellido: 'Guamán Suscal',
       cedula: '0302145896',
-      email: 'juan.guaman@gmail.com',
+      email: 'ciudadano@cañar.gob.ec',
       telefono: '0984758123',
     },
     predio: {
@@ -97,7 +97,7 @@ const SOLICITUDES_INICIALES: Solicitud[] = [
       nombre: 'María Estela',
       apellido: 'Chuma Carchi',
       cedula: '0301897452',
-      email: 'maria.chuma@yahoo.com',
+      email: 'ciudadano@cañar.gob.ec',
       telefono: '0995874125',
     },
     predio: {
@@ -292,7 +292,15 @@ export class MockDb {
       localStorage.setItem('gad_mock_solicitudes', JSON.stringify(SOLICITUDES_INICIALES))
       return SOLICITUDES_INICIALES
     }
-    return JSON.parse(db)
+    const list = JSON.parse(db)
+    // Verificación inteligente para corregir localStorage viejo en el navegador
+    const hasDemo = list.some((s: any) => s.ciudadano?.email === 'ciudadano@cañar.gob.ec')
+    if (!hasDemo) {
+      const merged = [...SOLICITUDES_INICIALES, ...list.filter((s: any) => s.ciudadano?.email !== 'ciudadano@cañar.gob.ec')]
+      localStorage.setItem('gad_mock_solicitudes', JSON.stringify(merged))
+      return merged
+    }
+    return list
   }
 
   static saveSolicitudes(list: Solicitud[]) {
