@@ -146,18 +146,6 @@ export function LandingTopbar() {
         </div>
       </div>
 
-      {/* ── FILA 3: Status bar ── */}
-      <div className="flex items-center justify-center gap-2 py-1.5"
-        style={{ background: '#0f172a' }}>
-        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#22C55E', boxShadow: '0 0 8px #22C55E' }} />
-        <span className="text-white font-bold tracking-widest" style={{ fontSize: '0.6rem', letterSpacing: '0.2em' }}>
-          PLATAFORMA E-GOVERNMENT ACTIVA
-        </span>
-        <span className="text-slate-500" style={{ fontSize: '0.6rem' }}>•</span>
-        <span className="text-slate-400 font-medium" style={{ fontSize: '0.6rem' }}>
-          GAD Municipal Cañar — Sistema de Ordenamiento Territorial
-        </span>
-      </div>
 
       {/* ── MOBILE MENU ── */}
       {mobileOpen && (
