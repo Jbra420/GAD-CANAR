@@ -61,7 +61,8 @@ export function BandejaSecretaria() {
       const q = busqueda.toLowerCase()
       const nombre = `${s.ciudadano?.nombre ?? ''} ${s.ciudadano?.apellido ?? ''}`.toLowerCase()
       const sId = typeof s.id === 'string' ? s.id : String(s.id || '')
-      if (!nombre.includes(q) && !sId.toLowerCase().includes(q) && !s.ciudadano?.cedula?.includes(q)) return false
+      const cedulaStr = s.ciudadano?.cedula || ''
+      if (!nombre.includes(q) && !sId.toLowerCase().includes(q) && !cedulaStr.includes(q)) return false
     }
     return true
   })
