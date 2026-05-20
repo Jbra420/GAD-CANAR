@@ -6,8 +6,6 @@ import { useAuthStore } from '@/stores/auth.store'
 const navItems = [
   { to: '/financiero', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/financiero/cobros', icon: CreditCard, label: 'Cobros Pendientes', end: true },
-  { to: '/financiero/historial', icon: History, label: 'Historial', end: true },
-  { to: '/financiero/liquidados', icon: CheckSquare, label: 'Liquidados', end: true },
 ]
 
 const ACCENT = '#7C3AED'
