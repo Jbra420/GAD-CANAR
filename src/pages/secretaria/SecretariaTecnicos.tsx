@@ -25,9 +25,10 @@ export function SecretariaTecnicos() {
     setError(null)
     try {
       const { data } = await usersApi.tecnicos()
-      const list = data ?? []
+      const rawList = Array.isArray(data) ? data : (data?.data || [])
+      const list = rawList.filter((t: any) => t && typeof t === 'object')
       setTecnicos(list)
-      setZonas(Object.fromEntries(list.map((t: Tecnico) => [t.id, t.zona ?? ''])))
+      setZonas(Object.fromEntries(list.map((t: Tecnico) => [t.id || '', t.zona ?? ''])))
     } catch (e: any) {
       setError(e.response?.data?.message || 'No se pudieron cargar los técnicos')
     } finally {
@@ -41,10 +42,11 @@ export function SecretariaTecnicos() {
 
   const filtrados = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return tecnicos
-    return tecnicos.filter((t) =>
-      `${t.nombre} ${t.apellido}`.toLowerCase().includes(q) ||
-      t.email.toLowerCase().includes(q) ||
+    const safeList = (tecnicos || []).filter((t) => t && typeof t === 'object')
+    if (!q) return safeList
+    return safeList.filter((t) =>
+      `${t.nombre || ''} ${t.apellido || ''}`.toLowerCase().includes(q) ||
+      (t.email || '').toLowerCase().includes(q) ||
       (t.telefono ?? '').includes(q),
     )
   }, [search, tecnicos])
@@ -64,11 +66,13 @@ export function SecretariaTecnicos() {
     }
   }
 
+  const safeTecnicos = (tecnicos || []).filter((t) => t && typeof t === 'object')
+
   const counts = {
-    todos: tecnicos.length,
-    urbano: tecnicos.filter((t) => t.zona === 'URBANO').length,
-    rural: tecnicos.filter((t) => t.zona === 'RURAL').length,
-    sinZona: tecnicos.filter((t) => !t.zona).length,
+    todos: safeTecnicos.length,
+    urbano: safeTecnicos.filter((t) => t.zona === 'URBANO').length,
+    rural: safeTecnicos.filter((t) => t.zona === 'RURAL').length,
+    sinZona: safeTecnicos.filter((t) => !t.zona).length,
   }
 
   return (
