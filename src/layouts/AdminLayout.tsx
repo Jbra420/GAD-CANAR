@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/auth.store'
 
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/admin/solicitudes', icon: FileText, label: 'Solicitudes' },
   { to: '/admin/usuarios', icon: Users, label: 'Usuarios' },
   { to: '/admin/auditoria', icon: Activity, label: 'Auditoría' },
 ]
