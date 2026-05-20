@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, PlusCircle,
-  Bell, LogOut, ChevronDown, Menu, X, CheckCircle2
+  LogOut, ChevronDown, Menu, X, CheckCircle2
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/stores/auth.store'
@@ -17,7 +17,6 @@ export function CiudadanoLayout() {
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [notifCount] = useState(2) // TODO: conectar con API de notificaciones
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -86,19 +85,6 @@ export function CiudadanoLayout() {
         {/* RIGHT: Actions */}
         <div className="flex items-center gap-3">
           
-          {/* Notifications */}
-          <button className="relative p-2 rounded-xl transition-all hidden sm:block"
-            style={{ color: 'rgba(255,255,255,0.7)' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(37,99,235,0.15)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
-            <Bell size={19} />
-            {notifCount > 0 && (
-              <span className="absolute top-1 right-1 text-white font-bold animate-pulse flex items-center justify-center"
-                style={{ background: '#CC2229', borderRadius: '50%', width: 14, height: 14, fontSize: 8, border: '1.5px solid rgba(11,17,32,0.8)' }}>
-                {notifCount > 9 ? '9+' : notifCount}
-              </span>
-            )}
-          </button>
 
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
