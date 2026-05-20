@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { AlertCircle, FileText, Eye, Plus } from 'lucide-react'
+import { AlertCircle, FileText, Eye, Plus, RotateCcw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { solicitudesApi } from '@/lib/apiCalls'
 import { getEstadoBadgeClass, getEstadoLabel, formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth.store'
+import { MockDb } from '@/lib/mockDb'
 
 export function MisSolicitudes() {
   const { user } = useAuthStore()
@@ -31,6 +32,13 @@ export function MisSolicitudes() {
     fetchMisSolicitudes()
   }, [user?.role])
 
+  const handleResetDemo = () => {
+    MockDb.reset()
+    fetchMisSolicitudes()
+  }
+
+  const safeList = (solicitudes || []).filter((s) => s && typeof s === 'object')
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -38,9 +46,19 @@ export function MisSolicitudes() {
           <FileText className="text-primary-600" />
           Mis Solicitudes
         </h1>
-        <Link to="/ciudadano/solicitudes/nueva" className="btn-primary">
-          <Plus size={18} /> Nuevo Trámite
-        </Link>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button 
+            onClick={handleResetDemo}
+            className="btn-secondary px-4 py-2 text-xs flex items-center gap-2 border-dashed"
+            title="Limpiar base de datos local y restaurar simulador"
+          >
+            <RotateCcw size={13} />
+            <span>Reiniciar Demo</span>
+          </button>
+          <Link to="/ciudadano/solicitudes/nueva" className="btn-primary">
+            <Plus size={18} /> Nuevo Trámite
+          </Link>
+        </div>
       </div>
 
       {user?.role === 'INVITADO' && (
@@ -75,7 +93,7 @@ export function MisSolicitudes() {
                     Cargando tus solicitudes...
                   </td>
                 </tr>
-              ) : solicitudes.length === 0 ? (
+              ) : safeList.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <FileText size={32} className="text-slate-400 mx-auto mb-3 opacity-50" />
@@ -84,7 +102,7 @@ export function MisSolicitudes() {
                   </td>
                 </tr>
               ) : (
-                solicitudes.map((s) => {
+                safeList.map((s) => {
                   const safeId = typeof s.id === 'string' ? s.id : String(s.id || '')
                   const displayId = safeId ? safeId.slice(0, 8).toUpperCase() : 'N/A'
                   return (
