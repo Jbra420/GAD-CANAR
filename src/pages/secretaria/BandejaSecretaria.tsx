@@ -25,17 +25,22 @@ export function BandejaSecretaria() {
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<EstadoFiltro>('TODOS')
   const [busqueda, setBusqueda] = useState('')
+  const [renderError, setRenderError] = useState<string | null>(null)
 
   const cargar = async () => {
     setLoading(true)
+    setRenderError(null)
     try {
       // Cargar solicitudes que corresponden a secretaría
       const params: any = {}
       if (filtro !== 'TODOS') params.estado = filtro
       const { data } = await solicitudesApi.list({ ...params, limit: 100 })
-      setSolicitudes(data.data ?? data ?? [])
-    } catch (e) {
+      const rawList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+      setSolicitudes(rawList)
+    } catch (e: any) {
       console.error('Error cargando bandeja', e)
+      setSolicitudes([])
+      setRenderError(e?.message || 'Error de conexión o datos corruptos localmente.')
     } finally {
       setLoading(false)
     }
@@ -47,28 +52,67 @@ export function BandejaSecretaria() {
 
   const handleResetDemo = () => {
     MockDb.reset()
+    setRenderError(null)
     cargar()
   }
 
-  const safeList = (solicitudes || []).filter((s) => s && typeof s === 'object')
+  // Ejecución ultra defensiva con auto-diagnóstico en caliente
+  let safeList: any[] = []
+  let filtradas: any[] = []
+  let pendientes = 0
+  let observados = 0
 
-  const filtradas = safeList.filter((s) => {
-    // Para "TODOS" mostramos PENDIENTE_SECRETARIA y OBSERVADO
-    if (filtro === 'TODOS') {
-      if (!s.estado || !['PENDIENTE_SECRETARIA', 'OBSERVADO'].includes(s.estado)) return false
+  try {
+    safeList = (solicitudes || []).filter((s) => s && typeof s === 'object')
+    filtradas = safeList.filter((s) => {
+      // Para "TODOS" mostramos PENDIENTE_SECRETARIA y OBSERVADO
+      if (filtro === 'TODOS') {
+        if (!s.estado || !['PENDIENTE_SECRETARIA', 'OBSERVADO'].includes(s.estado)) return false
+      }
+      if (busqueda) {
+        const q = busqueda.toLowerCase()
+        const nombre = `${s.ciudadano?.nombre ?? ''} ${s.ciudadano?.apellido ?? ''}`.toLowerCase()
+        const sId = typeof s.id === 'string' ? s.id : String(s.id || '')
+        const cedulaStr = s.ciudadano?.cedula || ''
+        if (!nombre.includes(q) && !sId.toLowerCase().includes(q) && !cedulaStr.includes(q)) return false
+      }
+      return true
+    })
+    pendientes = safeList.filter(s => s && s.estado === 'PENDIENTE_SECRETARIA').length
+    observados = safeList.filter(s => s && s.estado === 'OBSERVADO').length
+  } catch (err: any) {
+    console.error('Error procesando datos en render', err)
+    if (!renderError) {
+      setRenderError(err.message || 'Error al procesar los datos de trámites.')
     }
-    if (busqueda) {
-      const q = busqueda.toLowerCase()
-      const nombre = `${s.ciudadano?.nombre ?? ''} ${s.ciudadano?.apellido ?? ''}`.toLowerCase()
-      const sId = typeof s.id === 'string' ? s.id : String(s.id || '')
-      const cedulaStr = s.ciudadano?.cedula || ''
-      if (!nombre.includes(q) && !sId.toLowerCase().includes(q) && !cedulaStr.includes(q)) return false
-    }
-    return true
-  })
+  }
 
-  const pendientes = safeList.filter(s => s && s.estado === 'PENDIENTE_SECRETARIA').length
-  const observados = safeList.filter(s => s && s.estado === 'OBSERVADO').length
+  if (renderError) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto text-center space-y-6 bg-white rounded-3xl border shadow-xl mt-12 animate-fade-in" style={{ borderColor: '#f1f5f9' }}>
+        <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-500 border border-amber-100">
+          <RotateCcw className="animate-spin" size={32} />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-extrabold text-blue-950">Autodiagnóstico y Recuperación</h2>
+          <p className="text-slate-500 text-sm max-w-md mx-auto">
+            Hemos detectado datos corruptos o antiguos en la memoria local de tu navegador que provocaron una incompatibilidad. 
+            El sistema se ha auto-diagnosticado con éxito.
+          </p>
+        </div>
+        <div className="p-4 bg-slate-50 rounded-2xl text-xs font-mono text-slate-500 border border-slate-100 max-h-32 overflow-y-auto text-left">
+          [Diagnóstico] {renderError}
+        </div>
+        <button
+          onClick={handleResetDemo}
+          className="btn-primary w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform"
+        >
+          <RotateCcw size={16} />
+          Restaurar Base de Datos Local y Limpiar Caché
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

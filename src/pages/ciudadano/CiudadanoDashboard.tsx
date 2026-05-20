@@ -198,9 +198,11 @@ export function CiudadanoDashboard() {
       try {
         setLoading(true)
         const { data } = await solicitudesApi.misSolicitudes()
-        setSolicitudes(data.data || [])
+        const rawList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+        setSolicitudes(rawList)
       } catch (e) {
         console.error('Error cargando solicitudes dashboard:', e)
+        setSolicitudes([])
       } finally {
         setLoading(false)
       }

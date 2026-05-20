@@ -15,9 +15,11 @@ export function MisSolicitudes() {
     try {
       setLoading(true)
       const { data } = await solicitudesApi.misSolicitudes()
-      setSolicitudes(data.data)
+      const rawList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+      setSolicitudes(rawList)
     } catch (e) {
       console.error('Error fetching mis solicitudes:', e)
+      setSolicitudes([])
     } finally {
       setLoading(false)
     }
