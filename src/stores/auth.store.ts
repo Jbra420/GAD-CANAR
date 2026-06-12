@@ -2,32 +2,61 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import api from '@/lib/api'
 
-export type Role = 'SUPERADMIN' | 'CIUDADANO' | 'TECNICO' | 'SECRETARIA' | 'FINANCIERO' | 'INVITADO'
+export type Role = 'SUPERADMIN' | 'CITIZEN' | 'TECHNICIAN' | 'SECRETARY' | 'FINANCE' | 'GUEST' | 'ARCHITECT'
+
+export const ROLE_MAP_TO_FE: Record<string, Role> = {
+  SUPERADMIN: 'SUPERADMIN',
+  CIUDADANO: 'CITIZEN',
+  TECNICO: 'TECHNICIAN',
+  SECRETARIA: 'SECRETARY',
+  FINANCIERO: 'FINANCE',
+  INVITADO: 'GUEST',
+  ARQUITECTO: 'ARCHITECT',
+  CITIZEN: 'CITIZEN',
+  TECHNICIAN: 'TECHNICIAN',
+  SECRETARY: 'SECRETARY',
+  FINANCE: 'FINANCE',
+  GUEST: 'GUEST',
+  ARCHITECT: 'ARCHITECT',
+}
+
+export const ROLE_MAP_TO_BE: Record<Role, string> = {
+  SUPERADMIN: 'SUPERADMIN',
+  CITIZEN: 'CIUDADANO',
+  TECHNICIAN: 'TECNICO',
+  SECRETARY: 'SECRETARIA',
+  FINANCE: 'FINANCIERO',
+  GUEST: 'INVITADO',
+  ARCHITECT: 'ARQUITECTO',
+}
 
 export interface User {
   id: string
   email: string
-  nombre: string
-  apellido: string
-  cedula?: string
-  telefono?: string
+  first_name: string
+  last_name: string
+  national_id?: string
+  phone?: string
   role: Role
-  zona?: 'URBANO' | 'RURAL' | null  // Solo relevante para TECNICO
-  activo: boolean
-  createdAt: string
+  zone?: 'URBAN' | 'RURAL' | null
+  is_active: boolean
+  is_enabled?: boolean
+  title?: string
+  registration_number?: string
+  created_at: string
 }
 
 interface AuthState {
   user: User | null
-  accessToken: string | null
-  refreshToken: string | null
-  isLoading: boolean
+  access_token: string | null
+  refresh_token: string | null
+  is_loading: boolean
   error: string | null
 
   login: (email: string, password: string) => Promise<void>
   register: (data: RegisterData) => Promise<void>
-  registerInvitado: (email: string) => Promise<void>
-  completarPerfil: (data: CompletarPerfilData) => Promise<void>
+  registerGuest: (email: string) => Promise<void>
+  completeProfile: (data: CompleteProfileData) => Promise<void>
   logout: () => void
   clearError: () => void
 }
@@ -35,114 +64,146 @@ interface AuthState {
 interface RegisterData {
   email: string
   password: string
-  nombre: string
-  apellido: string
-  cedula: string
-  telefono?: string
+  first_name: string
+  last_name: string
+  national_id: string
+  phone?: string
 }
 
-export interface CompletarPerfilData {
-  nombre: string
-  apellido: string
-  cedula: string
+export interface CompleteProfileData {
+  first_name: string
+  last_name: string
+  national_id: string
   password: string
-  telefono?: string
+  phone?: string
+}
+
+export const mapUser = (u: any): User | null => {
+  if (!u) return null
+  return {
+    id: u.id,
+    email: u.email,
+    first_name: u.nombre || u.first_name || '',
+    last_name: u.apellido || u.last_name || '',
+    national_id: u.cedula || u.national_id,
+    phone: u.telefono || u.phone,
+    role: ROLE_MAP_TO_FE[u.role] || u.role,
+    zone: u.zona === 'RURAL' ? 'RURAL' : u.zona === 'URBANO' ? 'URBAN' : (u.zone || null),
+    is_active: u.activo !== undefined ? u.activo : u.is_active,
+    is_enabled: u.habilitado !== undefined ? u.habilitado : u.is_enabled,
+    title: u.titulo || u.title,
+    registration_number: u.numeroRegistro || u.registration_number,
+    created_at: u.createdAt || u.created_at,
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
-      isLoading: false,
+      access_token: null,
+      refresh_token: null,
+      is_loading: false,
       error: null,
 
       login: async (email, password) => {
-        set({ isLoading: true, error: null })
+        set({ is_loading: true, error: null })
         try {
           const { data } = await api.post('/auth/login', { email, password })
           localStorage.setItem('gad_access_token', data.accessToken)
           localStorage.setItem('gad_refresh_token', data.refreshToken)
           set({
-            user: data.user,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            isLoading: false,
+            user: mapUser(data.user),
+            access_token: data.accessToken,
+            refresh_token: data.refreshToken,
+            is_loading: false,
           })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
-            isLoading: false,
-            error: error.response?.data?.message || 'Error al iniciar sesión',
+            is_loading: false,
+            error: error.response?.data?.message || 'Error logging in',
           })
           throw err
         }
       },
 
       register: async (data) => {
-        set({ isLoading: true, error: null })
+        set({ is_loading: true, error: null })
         try {
-          const { data: res } = await api.post('/auth/register', data)
+          const payload = {
+            email: data.email,
+            password: data.password,
+            nombre: data.first_name,
+            apellido: data.last_name,
+            cedula: data.national_id,
+            telefono: data.phone,
+          }
+          const { data: res } = await api.post('/auth/register', payload)
           localStorage.setItem('gad_access_token', res.accessToken)
           localStorage.setItem('gad_refresh_token', res.refreshToken)
           set({
-            user: res.user,
-            accessToken: res.accessToken,
-            refreshToken: res.refreshToken,
-            isLoading: false,
+            user: mapUser(res.user),
+            access_token: res.accessToken,
+            refresh_token: res.refreshToken,
+            is_loading: false,
           })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
-            isLoading: false,
-            error: error.response?.data?.message || 'Error al registrarse',
+            is_loading: false,
+            error: error.response?.data?.message || 'Error registering',
           })
           throw err
         }
       },
 
-      // ── Registro rápido solo con email ──────────────────
-      registerInvitado: async (email) => {
-        set({ isLoading: true, error: null })
+      registerGuest: async (email) => {
+        set({ is_loading: true, error: null })
         try {
           const { data: res } = await api.post('/auth/registro-rapido', { email })
           localStorage.setItem('gad_access_token', res.accessToken)
           localStorage.setItem('gad_refresh_token', res.refreshToken)
           set({
-            user: res.user,
-            accessToken: res.accessToken,
-            refreshToken: res.refreshToken,
-            isLoading: false,
+            user: mapUser(res.user),
+            access_token: res.accessToken,
+            refresh_token: res.refreshToken,
+            is_loading: false,
           })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
-            isLoading: false,
-            error: error.response?.data?.message || 'Error al registrarse',
+            is_loading: false,
+            error: error.response?.data?.message || 'Error registering as guest',
           })
           throw err
         }
       },
 
-      // ── Completar perfil INVITADO → CIUDADANO ───────────
-      completarPerfil: async (data) => {
-        set({ isLoading: true, error: null })
+      completeProfile: async (data) => {
+        set({ is_loading: true, error: null })
         try {
-          const { data: res } = await api.post('/auth/completar-perfil', data)
+          const payload = {
+            nombre: data.first_name,
+            apellido: data.last_name,
+            cedula: data.national_id,
+            password: data.password,
+            telefono: data.phone,
+          }
+          const { data: res } = await api.post('/auth/completar-perfil', payload)
           localStorage.setItem('gad_access_token', res.accessToken)
           localStorage.setItem('gad_refresh_token', res.refreshToken)
           set({
-            user: res.user,
-            accessToken: res.accessToken,
-            refreshToken: res.refreshToken,
-            isLoading: false,
+            user: mapUser(res.user),
+            access_token: res.accessToken,
+            refresh_token: res.refreshToken,
+            is_loading: false,
           })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
-            isLoading: false,
-            error: error.response?.data?.message || 'Error al completar perfil',
+            is_loading: false,
+            error: error.response?.data?.message || 'Error completing profile',
           })
           throw err
         }
@@ -151,7 +212,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem('gad_access_token')
         localStorage.removeItem('gad_refresh_token')
-        set({ user: null, accessToken: null, refreshToken: null, error: null })
+        set({ user: null, access_token: null, refresh_token: null, error: null })
       },
 
       clearError: () => set({ error: null }),
@@ -160,8 +221,8 @@ export const useAuthStore = create<AuthState>()(
       name: 'gad-auth',
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
+        access_token: state.access_token,
+        refresh_token: state.refresh_token,
       }),
     },
   ),

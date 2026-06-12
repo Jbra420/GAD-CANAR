@@ -23,24 +23,52 @@ export function formatDateTime(date: string | Date): string {
   }).format(new Date(date))
 }
 
-export function getEstadoBadgeClass(estado: string): string {
-  const map: Record<string, string> = {
-    BORRADOR: 'badge-borrador',
-    EN_REVISION: 'badge-revision',
-    INSPECCION: 'badge-inspeccion',
-    APROBADO: 'badge-aprobado',
-    NEGADO: 'badge-negado',
+export function getStatusBadgeClass(status: string): string {
+  const status_map: Record<string, string> = {
+    DRAFT: 'badge-draft',
+    UNDER_REVIEW: 'badge-review',
+    INSPECTION: 'badge-inspection',
+    APPROVED: 'badge-approved',
+    REJECTED: 'badge-rejected',
+    OBSERVED: 'badge-observed',
+    PENDING_SECRETARY: 'badge-pending-secretary',
+    PENDING_PAYMENT: 'badge-pending-payment',
+    PAID: 'badge-paid',
+    // Spanish mapping fallback
+    BORRADOR: 'badge-draft',
+    EN_REVISION: 'badge-review',
+    INSPECCION: 'badge-inspection',
+    APROBADO: 'badge-approved',
+    NEGADO: 'badge-rejected',
+    OBSERVADO: 'badge-observed',
+    PENDIENTE_SECRETARIA: 'badge-pending-secretary',
+    PENDIENTE_PAGO: 'badge-pending-payment',
+    PAGADO: 'badge-paid',
   }
-  return map[estado] ?? 'badge-borrador'
+  return status_map[status] ?? 'badge-draft'
 }
 
-export function getEstadoLabel(estado: string): string {
-  const map: Record<string, string> = {
+export function getStatusLabel(status: string): string {
+  const label_map: Record<string, string> = {
+    DRAFT: 'Borrador',
+    UNDER_REVIEW: 'En Revisión',
+    INSPECTION: 'En Inspección',
+    APPROVED: 'Aprobado',
+    REJECTED: 'Negado',
+    OBSERVED: 'Observado',
+    PENDING_SECRETARY: 'Pendiente de Secretaría',
+    PENDING_PAYMENT: 'Pendiente de Pago',
+    PAID: 'Pagado',
+    // Spanish mapping fallback
     BORRADOR: 'Borrador',
     EN_REVISION: 'En Revisión',
     INSPECCION: 'En Inspección',
     APROBADO: 'Aprobado',
     NEGADO: 'Negado',
+    OBSERVADO: 'Observado',
+    PENDIENTE_SECRETARIA: 'Pendiente de Secretaría',
+    PENDIENTE_PAGO: 'Pendiente de Pago',
+    PAGADO: 'Pagado',
   }
-  return map[estado] ?? estado
+  return label_map[status] ?? status
 }

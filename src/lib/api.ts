@@ -6,7 +6,7 @@ const api = axios.create({
   withCredentials: false,
 })
 
-// ---- Interceptor: agrega token JWT en cada request ----
+// ---- Interceptor: Attach JWT Token in headers ----
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('gad_access_token')
   if (token) {
@@ -15,23 +15,23 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// ---- Interceptor: renueva token si expira ----
+// ---- Interceptor: Refresh JWT token on expiration ----
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true
-      const refreshToken = localStorage.getItem('gad_refresh_token')
-      if (refreshToken) {
+    const original_request = error.config
+    if (error.response?.status === 401 && !original_request._retry) {
+      original_request._retry = true
+      const refresh_token = localStorage.getItem('gad_refresh_token')
+      if (refresh_token) {
         try {
           const { data } = await axios.post('/api/v1/auth/refresh', {
-            refreshToken,
+            refreshToken: refresh_token,
           })
           localStorage.setItem('gad_access_token', data.accessToken)
           localStorage.setItem('gad_refresh_token', data.refreshToken)
-          original.headers.Authorization = `Bearer ${data.accessToken}`
-          return api(original)
+          original_request.headers.Authorization = `Bearer ${data.accessToken}`
+          return api(original_request)
         } catch {
           localStorage.clear()
           window.location.href = '/login'
