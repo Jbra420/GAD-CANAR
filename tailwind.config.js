@@ -19,68 +19,42 @@ export default {
         // AZUL — Color principal institucional (Fondo del escudo)
         primary: {
           50:  '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
           400: '#60a5fa',
-          500: '#2563EB',   // ← Azul oficial
+          DEFAULT: '#2563EB',
           600: '#1D4ED8',
-          700: '#1E40AF',
-          800: '#1E3A8A',
-          900: '#1E3A8A',
-          950: '#172554',
         },
 
         // ORO / AMARILLO — Estrellas y detalles
         accent: {
           50:  '#fffbeb',
           100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#F5C100',   // ← Oro oficial
+          DEFAULT: '#F5C100',
           600: '#D4A800',
-          700: '#B08A00',
-          800: '#8C6E00',
-          900: '#6B5200',
-          950: '#3D2E00',
         },
 
         // VERDE — Árbol del escudo
         success: {
           50:  '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
           400: '#4ade80',
-          500: '#22C55E',   // ← Verde oficial
+          DEFAULT: '#22C55E',
           600: '#16A34A',
-          700: '#15803D',
-          800: '#166534',
-          900: '#14532D',
         },
 
         // ROJO / FUEGO — Llama superior
         danger: {
-          50:  '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#EA580C',   // ← Naranja/Fuego
-          600: '#C2410C',
-          700: '#9A3412',
-          800: '#7C2D12',
-          900: '#431407',
+          50:  '#fef2f2',
+          400: '#f87171',
+          DEFAULT: '#EF4444',
+          600: '#DC2626',
         },
 
         // SUPERFICIE — Fondo claro premium
         surface: {
-          DEFAULT: '#F8FAFC',
-          card:    '#FFFFFF',
-          border:  '#E2E8F0',
-          muted:   '#F1F5F9',
-          warm:    '#F8FAFC',
+          DEFAULT: '#F8FAFC',   // Slate 50 (Blanco Humo)
+          card:    '#FFFFFF',   // Blanco puro
+          border:  '#E2E8F0',   // Slate 200 (Bordes)
+          muted:   '#F1F5F9',   // Slate 100 (Hover/Muted)
+          warm:    '#F8FAFC',   // 
         },
       },
 
@@ -91,7 +65,7 @@ export default {
         'gradient-primary':  'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
         'gradient-accent':   'linear-gradient(135deg, #F5C100 0%, #D4A800 100%)',
         'gradient-success':  'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-        'gradient-danger':   'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
+        'gradient-danger':   'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
         'gradient-shield':   'linear-gradient(135deg, #2563EB 0%, #F5C100 50%, #22C55E 100%)',
       },
 
@@ -99,7 +73,7 @@ export default {
         'glow-primary': '0 0 30px rgba(37, 99, 235, 0.25)',
         'glow-accent':  '0 0 30px rgba(245, 193, 0, 0.25)',
         'glow-success': '0 0 30px rgba(34, 197, 94, 0.25)',
-        'glow-danger':  '0 0 30px rgba(234, 88, 12, 0.25)',
+        'glow-danger':  '0 0 30px rgba(239, 68, 68, 0.25)',
         'card':         '0 4px 24px rgba(0, 0, 0, 0.5)',
         'card-hover':   '0 8px 40px rgba(37, 99, 235, 0.1)',
         'gold-border':  'inset 0 0 0 1px rgba(37, 99, 235, 0.2)',

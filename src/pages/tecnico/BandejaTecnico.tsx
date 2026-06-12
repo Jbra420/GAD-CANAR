@@ -159,7 +159,7 @@ export function BandejaTecnico() {
                 className="flex items-center gap-4 p-4 hover:bg-surface-muted/30 transition-colors group"
               >
                 {/* Ícono tipo trámite */}
-                <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <FileText size={18} className="text-primary-400" />
                 </div>
 

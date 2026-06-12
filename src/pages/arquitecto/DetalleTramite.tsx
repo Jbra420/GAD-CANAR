@@ -2,19 +2,22 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, FileText, Calendar, User, MapPin,
-  XCircle, AlertCircle, Eye, DollarSign
+  XCircle, Upload, Send,
+  AlertCircle, Eye, DollarSign
 } from 'lucide-react'
-import { solicitudesApi } from '@/lib/apiCalls'
+import { solicitudesApi, anexosApi } from '@/lib/apiCalls'
 import { getEstadoBadgeClass, getEstadoLabel, formatDateTime, cn } from '@/lib/utils'
 import api from '@/lib/api'
 
 import { SolicitudTimeline } from '@/components/SolicitudTimeline'
 
-export function DetalleSolicitud() {
+export function DetalleTramite() {
   const { id } = useParams<{ id: string }>()
   const [solicitud, setSolicitud] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
 
   const cargar = useCallback(async () => {
     if (!id) return
@@ -29,6 +32,34 @@ export function DetalleSolicitud() {
   }, [id])
 
   useEffect(() => { cargar() }, [cargar])
+
+  const handleUploadAnexo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !id) return
+    setUploadingFile(true)
+    try {
+      await anexosApi.upload(id, file)
+      await cargar()
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Error al subir archivo')
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
+  const handleEnviar = async () => {
+    if (!id) return
+    setEnviando(true)
+    setError(null)
+    try {
+      await solicitudesApi.enviar(id)
+      await cargar()
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Error al enviar')
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   const handleView = async (url: string) => {
     try {
@@ -55,12 +86,13 @@ export function DetalleSolicitud() {
   )
 
   const esNegado = solicitud.estado === 'NEGADO'
+  const esBorrador = solicitud.estado === 'BORRADOR'
 
   return (
     <div className="animate-fade-in space-y-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <Link to="/ciudadano/solicitudes" className="btn-secondary p-2 mt-1">
+        <Link to="/arquitecto/tramites" className="btn-secondary p-2 mt-1">
           <ArrowLeft size={18} />
         </Link>
         <div className="flex-1">
@@ -91,7 +123,7 @@ export function DetalleSolicitud() {
         <SolicitudTimeline estadoActual={solicitud.estado} />
       </div>
 
-      {/* Observaciones de Secretaría o Técnico (cuando devuelven o niegan) */}
+      {/* Observaciones de Secretaría (cuando devuelven) */}
       {(solicitud.estado === 'OBSERVADO' && solicitud.dictamenSecretaria?.observaciones) && (
         <div className="glass-card p-6 border-amber-500/30">
           <div className="flex items-center gap-3 mb-3">
@@ -135,7 +167,7 @@ export function DetalleSolicitud() {
           {solicitud.cobros[0].estado === 'PENDIENTE' && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl">
               <p className="text-xs text-blue-800">
-                Acércate a las ventanillas de recaudación del GAD Municipal con el número de trámite <strong>#{id?.slice(0, 8).toUpperCase()}</strong> para cancelar el valor correspondiente.
+                El propietario debe acercarse a las ventanillas de recaudación del GAD Municipal con el número de trámite <strong>#{id?.slice(0, 8).toUpperCase()}</strong> para cancelar el valor correspondiente.
               </p>
             </div>
           )}
@@ -150,6 +182,33 @@ export function DetalleSolicitud() {
             <h2 className="font-heading font-semibold text-red-400">Solicitud Negada</h2>
           </div>
           <p className="text-blue-800 text-sm">{solicitud.motivoRechazo || solicitud.observaciones || 'Sin motivo especificado.'}</p>
+        </div>
+      )}
+
+      {/* Datos del Propietario */}
+      {solicitud.ciudadano && (
+        <div className="glass-card p-6">
+          <h2 className="font-heading font-semibold text-blue-950 mb-3 flex items-center gap-2">
+            <User size={16} className="text-primary-400" /> Propietario del Predio (Cliente)
+          </h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-slate-500">Nombre</p>
+              <p className="text-blue-950 font-medium mt-0.5">{solicitud.ciudadano.nombre} {solicitud.ciudadano.apellido}</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Identificación (Cédula/RUC)</p>
+              <p className="text-blue-950 font-medium mt-0.5">{solicitud.ciudadano.cedula}</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Correo Electrónico</p>
+              <p className="text-blue-950 font-medium mt-0.5">{solicitud.ciudadano.email}</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Teléfono</p>
+              <p className="text-blue-950 font-medium mt-0.5">{solicitud.ciudadano.telefono || '—'}</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -175,17 +234,6 @@ export function DetalleSolicitud() {
           <p className="text-blue-800 text-sm mt-3 border-t border-surface-border pt-3">{solicitud.predio.descripcion}</p>
         )}
       </div>
-
-      {/* Arquitecto tramitador */}
-      {solicitud.arquitecto && (
-        <div className="glass-card p-6">
-          <h2 className="font-heading font-semibold text-blue-950 mb-3 flex items-center gap-2">
-            <User size={16} className="text-primary-400" /> Arquitecto Tramitador
-          </h2>
-          <p className="text-blue-950 font-medium">{solicitud.arquitecto.nombre} {solicitud.arquitecto.apellido}</p>
-          <p className="text-slate-500 text-sm">{solicitud.arquitecto.email}</p>
-        </div>
-      )}
 
       {/* Técnico asignado */}
       {solicitud.tecnico && (
@@ -218,6 +266,12 @@ export function DetalleSolicitud() {
           <h2 className="font-heading font-semibold text-blue-950 flex items-center gap-2">
             <FileText size={16} className="text-primary-400" /> Documentos ({solicitud.anexos?.length ?? 0})
           </h2>
+          {esBorrador && (
+            <label className="btn-secondary text-xs px-3 py-2 cursor-pointer">
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleUploadAnexo} className="sr-only" />
+              {uploadingFile ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Upload size={14} /> Agregar Documento</>}
+            </label>
+          )}
         </div>
 
         {solicitud.anexos?.length === 0 ? (
@@ -243,8 +297,28 @@ export function DetalleSolicitud() {
         )}
       </div>
 
-
-
+      {/* Acción: Enviar a revisión */}
+      {esBorrador && (
+        <div className="glass-card p-6 border-primary/30">
+          <h2 className="font-heading font-semibold text-blue-950 mb-2">Enviar a Revisión</h2>
+          <p className="text-slate-500 text-sm">
+            Al enviar, confirmas que los datos y anexos proporcionados son correctos, y la solicitud será asignada automáticamente a la Secretaría del GAD para revisión documental.
+          </p>
+          {(solicitud.anexos?.length ?? 0) === 0 && (
+            <p className="text-yellow-400 text-sm mb-3 flex items-center gap-2">
+              <AlertCircle size={14} /> Debes adjuntar al menos un documento.
+            </p>
+          )}
+          <button
+            id="detalle-enviar"
+            onClick={handleEnviar}
+            disabled={enviando || solicitud.anexos?.length === 0}
+            className="btn-primary w-full"
+          >
+            {enviando ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={18} /> Enviar a Revisión</>}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

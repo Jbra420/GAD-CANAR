@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, FileText, User, MapPin,
   CheckCircle2, XCircle, AlertCircle, Eye,
   Download, Camera, Upload, Trash2, Image, MessageSquare,
-  ZoomIn, X as XIcon, Send,
+  ZoomIn, X as XIcon,
 } from 'lucide-react'
 import { solicitudesApi } from '@/lib/apiCalls'
 import { getEstadoBadgeClass, getEstadoLabel, formatDateTime, cn } from '@/lib/utils'
@@ -133,9 +133,9 @@ export function InspeccionPage() {
   // Lightbox
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
-  const apiBase = (window as any).__API_URL__ ?? 'http://localhost:3001/api/v1'
+  const apiBase = (window as any).__API_URL__ ?? '/api/v1'
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     if (!id) return
     setLoading(true)
     try {
@@ -151,9 +151,9 @@ export function InspeccionPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
-  useEffect(() => { cargar() }, [id])
+  useEffect(() => { cargar() }, [cargar])
 
   // Gestión de fotos seleccionadas
   const onFotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -387,7 +387,7 @@ export function InspeccionPage() {
                   <div key={foto.id} className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer"
                     style={{ background: 'rgba(27,127,191,0.08)', border: '1px solid rgba(27,127,191,0.2)' }}
                     onClick={handleViewFoto}>
-                    <img src={`http://localhost:3001${url}`} alt={foto.nombre} className="w-full h-full object-cover opacity-50" />
+                    <img src={url} alt={foto.nombre} className="w-full h-full object-cover opacity-50" />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       style={{ background: 'rgba(0,0,0,0.5)' }}>
                       <ZoomIn size={20} style={{ color: 'white' }} />
@@ -580,15 +580,7 @@ export function InspeccionPage() {
             </div>
           )}
 
-          {resolucion && (
-            <div className="p-3 rounded-xl" style={{ background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.1)' }}>
-              <p style={{ color: 'rgba(160,130,60,0.7)', fontSize: '0.75rem', lineHeight: 1.6 }}>
-                🔐 Al confirmar se generará tu <strong style={{ color: '#2563EB' }}>firma digital técnica</strong> (XAdES-BES)
-                y el ciudadano recibirá notificación inmediata.
-                {' '}<span style={{ color: 'rgba(200,160,30,0.5)' }}>[Prototipo: firma simulada]</span>
-              </p>
-            </div>
-          )}
+
 
           <button
             onClick={handleResolver}
@@ -609,8 +601,7 @@ export function InspeccionPage() {
             {resolving
               ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               : <>
-                  <Send size={18} />
-                  Firmar y {resolucion === 'APROBADO' ? 'Aprobar' : resolucion === 'NEGADO' ? 'Negar' : 'Resolver'} solicitud
+                  Confirmar y {resolucion === 'APROBADO' ? 'Aprobar' : resolucion === 'NEGADO' ? 'Negar' : 'Resolver'} solicitud
                 </>}
           </button>
         </div>

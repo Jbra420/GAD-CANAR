@@ -24,6 +24,8 @@ export const solicitudesApi = {
   cambiarEstado: (id: string, data: object) => api.patch(`/solicitudes/${id}/estado`, data),
   agendar: (id: string, data: object) => api.post(`/solicitudes/${id}/agenda`, data),
   resolver: (id: string, data: object) => api.post(`/solicitudes/${id}/resolver`, data),
+  seguimientoPublico: (params: { email?: string; cedula?: string }) =>
+    api.get('/solicitudes/seguimiento-publico', { params }),
 
   /**
    * Subir reporte de inspección técnica (fotos JPEG/PNG + comentarios)
@@ -73,6 +75,9 @@ export const usersApi = {
   dashboardStats: () => api.get('/users/dashboard/stats'),
   toggleActivo: (id: string, activo: boolean) =>
     api.patch(`/users/${id}/toggle-activo`, { activo }),
+  arquitectosPendientes: () => api.get('/users/arquitectos/pendientes'),
+  habilitarArquitecto: (id: string, habilitado: boolean) =>
+    api.patch(`/users/${id}/habilitar-arquitecto`, { habilitado }),
 }
 
 // ---- Auditoría ----

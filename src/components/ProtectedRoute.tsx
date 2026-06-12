@@ -22,10 +22,8 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />
   }
 
-  const role = user.role as Role
-
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to={ROLE_HOME[role]} replace />
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to={ROLE_HOME[user.role]} replace />
   }
 
   return <Outlet />
@@ -35,8 +33,7 @@ export function PublicOnlyRoute() {
   const { user } = useAuthStore()
 
   if (user) {
-    const role = user.role as Role
-    return <Navigate to={ROLE_HOME[role]} replace />
+    return <Navigate to={ROLE_HOME[user.role]} replace />
   }
 
   return <Outlet />

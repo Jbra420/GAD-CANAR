@@ -29,7 +29,7 @@ export function TecnicoDashboard() {
         {([
           { label: 'En Revisión (Nuevos)', value: asignados.length, icon: Inbox, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
           { label: 'En Inspección', value: enInspeccion.length, icon: MapPin, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'Resueltos', value: resueltos.length, icon: CheckCircle2, color: 'text-success-400', bg: 'bg-success-500/10' },
+          { label: 'Resueltos', value: resueltos.length, icon: CheckCircle2, color: 'text-success-400', bg: 'bg-success/10' },
         ] as const).map(s => (
           <div key={s.label} className="stat-card">
             <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
@@ -48,7 +48,7 @@ export function TecnicoDashboard() {
             <Clock size={18} className="text-primary-400" />
             Trámites Pendientes de Revisión
           </h2>
-          <Link to="/tecnico/bandeja" className="text-sm font-semibold text-primary-400 hover:text-primary-300 transition-colors">
+          <Link to="/tecnico/bandeja" className="text-sm font-semibold text-primary-400 hover:text-primary-400 transition-colors">
             Ver todos →
           </Link>
         </div>

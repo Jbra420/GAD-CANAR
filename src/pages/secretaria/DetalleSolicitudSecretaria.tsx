@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, FileText, User, MapPin, CheckCircle2, XCircle,
-  AlertCircle, Eye, Download, Clock, FileCheck2, PenLine,
+  AlertCircle, Eye, Download, Clock, FileCheck2,
 } from 'lucide-react'
 import { solicitudesApi } from '@/lib/apiCalls'
 import api from '@/lib/api'
@@ -104,10 +104,10 @@ export function DetalleSolicitudSecretaria() {
 
   // Checklist de verificación
   const [checks, setChecks] = useState({
-    firmaPresente: false,
     documentosCompletos: false,
     datosCorrectos: false,
     predioIdentificado: false,
+    validarTitulo: false,
   })
 
   // Formulario de dictamen
@@ -240,6 +240,30 @@ export function DetalleSolicitudSecretaria() {
         </div>
       </div>
 
+      {/* ── Datos del arquitecto ── */}
+      {solicitud.arquitecto && (
+        <div className="glass-card p-5">
+          <h2 className="font-heading font-semibold text-blue-950 mb-4 flex items-center gap-2 text-sm">
+            <User size={15} className="text-amber-600" /> Arquitecto Responsable (Patrocinador)
+          </h2>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {[
+              { l: 'Nombre completo', v: `${solicitud.arquitecto.nombre} ${solicitud.arquitecto.apellido}` },
+              { l: 'Cédula', v: solicitud.arquitecto.cedula || '—' },
+              { l: 'Título profesional', v: solicitud.arquitecto.titulo || '—' },
+              { l: 'Registro SENESCYT', v: solicitud.arquitecto.numeroRegistro || '—' },
+              { l: 'Correo', v: solicitud.arquitecto.email },
+              { l: 'Teléfono', v: solicitud.arquitecto.telefono || '—' },
+            ].map(({ l, v }) => (
+              <div key={l}>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-0.5">{l}</p>
+                <p className="text-blue-950 font-medium">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Datos del predio ── */}
       <div className="glass-card p-5">
         <h2 className="font-heading font-semibold text-blue-950 mb-4 flex items-center gap-2 text-sm">
@@ -289,26 +313,7 @@ export function DetalleSolicitudSecretaria() {
         )}
       </div>
 
-      {/* ── Firmas registradas ── */}
-      {solicitud.firmas?.length > 0 && (
-        <div className="glass-card p-5">
-          <h2 className="font-heading font-semibold text-blue-950 mb-4 flex items-center gap-2 text-sm">
-            <PenLine size={15} className="text-blue-600" /> Firmas Digitales
-          </h2>
-          <div className="space-y-2">
-            {solicitud.firmas.map((firma: any) => (
-              <div key={firma.id} className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
-                <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-green-800">Firma de {firma.tipo}</p>
-                  <p className="text-xs text-green-600 font-mono truncate">Hash: {firma.hashDocumento?.slice(0, 24)}…</p>
-                </div>
-                <p className="text-xs text-slate-400">{formatDateTime(firma.creadoEn)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* ══════════════════════════════════════
           PANEL DE DICTAMEN (solo si no está resuelta)
@@ -321,7 +326,7 @@ export function DetalleSolicitudSecretaria() {
             </div>
             <div>
               <h2 className="font-heading font-semibold text-blue-950">Dictamen de Secretaría</h2>
-              <p className="text-slate-400 text-xs">Verifica que el expediente esté completo y correctamente firmado</p>
+              <p className="text-slate-400 text-xs">Verifica que el expediente esté completo</p>
             </div>
           </div>
 
@@ -331,10 +336,10 @@ export function DetalleSolicitudSecretaria() {
               Lista de verificación ({Object.values(checks).filter(Boolean).length}/{Object.keys(checks).length})
             </p>
             <div className="space-y-2">
-              <CheckItem label="✍️ Firma digital del ciudadano presente" checked={checks.firmaPresente} onToggle={() => toggleCheck('firmaPresente')} />
               <CheckItem label="📁 Todos los documentos requeridos adjuntos" checked={checks.documentosCompletos} onToggle={() => toggleCheck('documentosCompletos')} />
               <CheckItem label="👤 Datos del solicitante correctos y completos" checked={checks.datosCorrectos} onToggle={() => toggleCheck('datosCorrectos')} />
               <CheckItem label="📍 Predio identificado con dirección clara" checked={checks.predioIdentificado} onToggle={() => toggleCheck('predioIdentificado')} />
+              <CheckItem label="🪪 Título del Arquitecto validado con su Cédula" checked={checks.validarTitulo} onToggle={() => toggleCheck('validarTitulo')} />
             </div>
           </div>
 

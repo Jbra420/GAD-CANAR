@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, FileText, Calendar, User, MapPin,
@@ -22,7 +22,7 @@ export function AdminDetalleSolicitud() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     if (!id) return
     try {
       const { data } = await solicitudesApi.getById(id)
@@ -32,9 +32,9 @@ export function AdminDetalleSolicitud() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
-  useEffect(() => { cargar() }, [id])
+  useEffect(() => { cargar() }, [cargar])
 
   const estadoIndex = (estado: string) => {
     const order = ['BORRADOR', 'EN_REVISION', 'INSPECCION', 'APROBADO']
@@ -209,7 +209,7 @@ export function AdminDetalleSolicitud() {
                 </div>
                 <button
                   onClick={() => handleView(`/api/v1/files/${encodeURIComponent(anexo.key)}`)}
-                  className="text-primary-400 hover:text-primary-300"
+                  className="text-primary-400 hover:text-primary-400"
                 >
                   <Eye size={16} />
                 </button>
@@ -219,30 +219,7 @@ export function AdminDetalleSolicitud() {
         )}
       </div>
 
-      {/* Firmas */}
-      {solicitud.firmas?.length > 0 && (
-        <div className="glass-card p-6">
-          <h2 className="font-heading font-semibold text-blue-950 mb-4 flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-success-400" /> Firmas Digitales
-          </h2>
-          <div className="space-y-3">
-            {solicitud.firmas.map((firma: any) => (
-              <div key={firma.id} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-surface-border">
-                <div className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
-                  firma.tipo === 'CIUDADANO' ? 'bg-primary-500/20 text-primary-400' : 'bg-emerald-500/20 text-emerald-400',
-                )}>
-                  {firma.tipo === 'CIUDADANO' ? 'C' : 'T'}
-                </div>
-                <div>
-                  <p className="text-blue-950 text-sm font-medium">{firma.firmante} <span className="text-slate-500 font-normal">({firma.tipo === 'CIUDADANO' ? 'Ciudadano' : 'Técnico'})</span></p>
-                  <p className="text-slate-500 text-xs">Hash: {firma.hashDocumento?.slice(0, 20)}... • {formatDateTime(firma.creadoEn)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
     </div>
   )

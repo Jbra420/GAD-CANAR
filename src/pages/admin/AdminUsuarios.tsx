@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Edit3, Plus, Search, Shield, Users, X } from 'lucide-react'
 import { usersApi } from '@/lib/apiCalls'
 import { formatDateTime, cn } from '@/lib/utils'
 
-type Role = 'SUPERADMIN' | 'TECNICO' | 'SECRETARIA' | 'FINANCIERO' | 'CIUDADANO' | 'INVITADO'
+type Role = 'SUPERADMIN' | 'TECNICO' | 'SECRETARIA' | 'FINANCIERO' | 'CIUDADANO' | 'INVITADO' | 'ARQUITECTO'
 
 interface AdminUser {
   id: string
@@ -36,6 +36,7 @@ const ROLE_LABELS: Record<Role, string> = {
   FINANCIERO: 'Financiero',
   CIUDADANO: 'Ciudadano',
   INVITADO: 'Invitado',
+  ARQUITECTO: 'Arquitecto',
 }
 
 const ROLE_OPTIONS: Array<{ value: Role; label: string }> = [
@@ -53,6 +54,7 @@ function roleBadge(role: Role) {
     : role === 'SECRETARIA' ? 'bg-orange-100 text-orange-700 border border-orange-200'
     : role === 'FINANCIERO' ? 'bg-violet-100 text-violet-700 border border-violet-200'
     : role === 'INVITADO' ? 'bg-slate-100 text-slate-700 border border-slate-200'
+    : role === 'ARQUITECTO' ? 'bg-green-100 text-green-700 border border-green-200'
     : 'bg-amber-100 text-amber-700 border border-amber-200'
 }
 
@@ -67,7 +69,7 @@ export function AdminUsuarios() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const params = roleFilter ? { role: roleFilter, limit: 100 } : { limit: 100 }
       const { data } = await usersApi.list(params)
@@ -77,12 +79,12 @@ export function AdminUsuarios() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [roleFilter])
 
   useEffect(() => {
     setLoading(true)
     fetchUsers()
-  }, [roleFilter])
+  }, [fetchUsers])
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -232,7 +234,7 @@ export function AdminUsuarios() {
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                     Cargando usuarios...
                   </td>
                 </tr>
@@ -247,7 +249,7 @@ export function AdminUsuarios() {
                   <tr key={u.id} className="border-b border-surface-border hover:bg-surface-muted/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
+                        <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold">
                           {(u.nombre?.charAt(0) || '?')}{(u.apellido?.charAt(0) || '')}
                         </div>
                         <div>
@@ -277,7 +279,7 @@ export function AdminUsuarios() {
                         onClick={() => handleToggleActivo(u)}
                         className={cn(
                           'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                          u.activo ? 'bg-success-500' : 'bg-slate-300',
+                          u.activo ? 'bg-success' : 'bg-slate-300',
                         )}
                         title={u.activo ? 'Desactivar usuario' : 'Activar usuario'}
                       >

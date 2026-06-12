@@ -13,8 +13,7 @@
   --blue:    #2563EB;
   --gold:    #F5C100;
   --green:   #22C55E;
-  --orange:  #EA580C;
-  --red:     #CC2229;
+  --red:     #EF4444;
   --dark:    #F8FAFC;
   --dark-card: #FFFFFF;
   --dark-border: #E2E8F0;
@@ -35,7 +34,7 @@
     font-family: 'Inter', system-ui, sans-serif;
     min-height: 100vh;
   }
-
+  
   body::before {
     content: "";
     background-image: url('/logo-gad.png');
@@ -43,7 +42,7 @@
     background-position: center center;
     background-size: 40vh;
     background-attachment: fixed;
-    opacity: 0.03;
+    opacity: 0.05;
     position: fixed;
     top: 0; left: 0; bottom: 0; right: 0;
     z-index: -1;
@@ -79,7 +78,7 @@
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
     border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(0, 0, 0, 0.01);
     backdrop-filter: blur(12px);
     transition: all 0.3s ease;
   }
@@ -113,15 +112,14 @@
     font-weight: 700;
     font-size: 0.875rem;
     letter-spacing: 0.01em;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 4px 12px rgba(0,0,0,0.3);
     transition: all 0.2s ease;
     cursor: pointer;
     border: none;
-    text-decoration: none;
   }
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.5);
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.6), 0 8px 20px rgba(0,0,0,0.4);
   }
   .btn-primary:active:not(:disabled) { transform: scale(0.98); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -135,16 +133,15 @@
     padding: 0.75rem 1.5rem;
     border-radius: 12px;
     background: transparent;
-    color: #1D4ED8;
+    color: #2563EB;
     font-weight: 600;
     font-size: 0.875rem;
-    border: 1.5px solid rgba(37, 99, 235, 0.4);
+    border: 1px solid rgba(37, 99, 235, 0.3);
     transition: all 0.2s ease;
     cursor: pointer;
-    text-decoration: none;
   }
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(37, 99, 235, 0.05);
     border-color: rgba(37, 99, 235, 0.7);
     color: #1D4ED8;
   }
@@ -163,7 +160,7 @@
     color: #fff;
     font-weight: 700;
     font-size: 0.875rem;
-    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
     transition: all 0.2s ease;
     cursor: pointer;
     border: none;
@@ -183,7 +180,7 @@
     color: #fff;
     font-weight: 700;
     font-size: 0.875rem;
-    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.3);
+    box-shadow: 0 0 20px rgba(234, 88, 12, 0.3);
     transition: all 0.2s ease;
     cursor: pointer;
     border: none;
@@ -198,8 +195,8 @@
     width: 100%;
     padding: 0.75rem 1rem;
     border-radius: 12px;
-    background: rgba(255,255,255,0.9);
-    border: 1.5px solid rgba(37, 99, 235, 0.2);
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(37, 99, 235, 0.2);
     color: #0F172A;
     font-size: 0.875rem;
     font-weight: 400;
@@ -210,8 +207,8 @@
   .input-field::placeholder { color: rgba(15, 23, 42, 0.4); }
   .input-field:focus {
     border-color: rgba(37, 99, 235, 0.7);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    background: rgba(37, 99, 235, 0.02);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15), 0 0 20px rgba(37, 99, 235, 0.1);
+    background: rgba(37, 99, 235, 0.04);
   }
 
   .input-label {
@@ -228,7 +225,7 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: #DC2626;
+    color: #F87171;
     font-size: 0.75rem;
     margin-top: 0.375rem;
   }
@@ -253,13 +250,6 @@
     background: rgba(0,0,0,0.04);
     color: #4B5563;
     border: 1px solid rgba(0,0,0,0.1);
-  }
-
-  .badge-pendiente {
-    @apply badge;
-    background: rgba(245, 193, 0, 0.12);
-    color: #D97706;
-    border: 1px solid rgba(245, 193, 0, 0.3);
   }
 
   .badge-revision {
@@ -288,20 +278,6 @@
     background: rgba(234, 88, 12, 0.12);
     color: #C2410C;
     border: 1px solid rgba(234, 88, 12, 0.3);
-  }
-
-  .badge-rechazado {
-    @apply badge;
-    background: rgba(204, 34, 41, 0.12);
-    color: #9A181E;
-    border: 1px solid rgba(204, 34, 41, 0.3);
-  }
-
-  .badge-cobro {
-    @apply badge;
-    background: rgba(124, 58, 237, 0.12);
-    color: #6D28D9;
-    border: 1px solid rgba(124, 58, 237, 0.3);
   }
 
   /* ══════════════════════════════════════════
@@ -375,17 +351,17 @@
   ══════════════════════════════════════════ */
   .shield-divider {
     height: 3px;
-    background: linear-gradient(90deg, #CC2229 0%, #F5C100 33%, #22C55E 66%, #2563EB 100%);
+    background: linear-gradient(90deg, #EF4444 0%, #F5C100 33%, #22C55E 66%, #2563EB 100%);
     border-radius: 99px;
   }
 
   .shield-band {
     height: 4px;
-    background: linear-gradient(90deg, #CC2229 25%, #F5C100 25% 50%, #22C55E 50% 75%, #2563EB 75%);
+    background: linear-gradient(90deg, #EF4444 25%, #F5C100 25% 50%, #22C55E 50% 75%, #2563EB 75%);
   }
 
   /* Indicador lateral de color */
-  .color-indicator-red    { border-left: 3px solid #CC2229; }
+  .color-indicator-red    { border-left: 3px solid #EF4444; }
   .color-indicator-gold   { border-left: 3px solid #F5C100; }
   .color-indicator-green  { border-left: 3px solid #22C55E; }
   .color-indicator-blue   { border-left: 3px solid #2563EB; }
@@ -401,13 +377,13 @@
   }
 
   .text-gradient-shield {
-    background: linear-gradient(135deg, #CC2229 0%, #F5C100 33%, #22C55E 66%, #2563EB 100%);
+    background: linear-gradient(135deg, #EF4444 0%, #F5C100 33%, #22C55E 66%, #2563EB 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  /* Legacy alias */
+  /* Legacy alias for existing components */
   .text-gradient { @apply text-gradient-gold; }
 
   /* Fondos glassmorphism */
@@ -420,4 +396,19 @@
   .animate-fade-in  { animation: fadeIn 0.5s ease-out both; }
   .animate-slide-up { animation: slideUp 0.4s ease-out both; }
   .animate-slide-in { animation: slideIn 0.3s ease-out both; }
+
+  /* Ambient Floating Blobs */
+  @keyframes blob-float-one {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(40px, -60px) scale(1.15); }
+    66% { transform: translate(-30px, 30px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+  @keyframes blob-float-two {
+    0% { transform: translate(0px, 0px) scale(1); }
+    50% { transform: translate(-50px, 50px) scale(1.1); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+  .animate-blob-1 { animation: blob-float-one 16s infinite ease-in-out; }
+  .animate-blob-2 { animation: blob-float-two 20s infinite ease-in-out; }
 }

@@ -5,52 +5,43 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   MapPin, FileText, CheckCircle2, ArrowRight, ArrowLeft,
-  AlertCircle, Building2, Upload, X, Factory, Layers, HardHat,
+  AlertCircle, Building2, Upload, X, Factory, Layers, HardHat, User,
+  Search, UserCheck,
 } from 'lucide-react'
 import { solicitudesApi, anexosApi } from '@/lib/apiCalls'
-import { useAuthStore } from '@/stores/auth.store'
-import { CompletarPerfilModal } from '@/components/CompletarPerfilModal'
 import { cn } from '@/lib/utils'
+import api from '@/lib/api'
 
-// ── Tipos de trámite alineados con enum TipoTramite del backend ──
 type TipoTramite = 'LINEA_FABRICAS' | 'APROBACION_PLANOS' | 'PERMISO_CONSTRUCCION'
 
-const TRAMITES: {
-  value: TipoTramite
-  label: string
-  desc: string
-  icon: React.ReactNode
-  color: string
-  docs: string[]
-}[] = [
+const TRAMITES = [
   {
-    value: 'LINEA_FABRICAS',
+    value: 'LINEA_FABRICAS' as TipoTramite,
     label: 'Línea de Fábricas',
     desc: 'Certificado que establece el lindero frontal de un predio respecto a la vía pública.',
     icon: <Factory size={28} />,
     color: '#D97706',
-    docs: ['Título de propiedad', 'Cédula del propietario', 'Ficha catastral', 'Plano de ubicación'],
+    docs: ['Título de propiedad', 'Cédula del propietario', 'Ficha catastral', 'Plano de ubicación', 'Copia de Cédula del Profesional'],
   },
   {
-    value: 'APROBACION_PLANOS',
+    value: 'APROBACION_PLANOS' as TipoTramite,
     label: 'Aprobación de Planos',
-    desc: 'Revisión y aprobación técnica de planos arquitectónicos y estructurales de construcción.',
+    desc: 'Revisión y aprobación técnica de planos arquitectónicos y estructurales.',
     icon: <Layers size={28} />,
     color: '#2563EB',
-    docs: ['Título de propiedad', 'Planos arquitectónicos', 'Planos estructurales', 'Memoria de cálculo', 'Cédula del propietario'],
+    docs: ['Título de propiedad', 'Planos arquitectónicos', 'Planos estructurales', 'Memoria de cálculo', 'Cédula del propietario', 'Copia de Cédula del Profesional'],
   },
   {
-    value: 'PERMISO_CONSTRUCCION',
+    value: 'PERMISO_CONSTRUCCION' as TipoTramite,
     label: 'Permiso de Construcción',
     desc: 'Autorización municipal para ejecutar obras de construcción, ampliación o remodelación.',
     icon: <HardHat size={28} />,
     color: '#2E8B57',
-    docs: ['Título de propiedad', 'Planos aprobados', 'Contrato con profesional', 'Cédula del propietario', 'Pago de impuesto predial'],
+    docs: ['Título de propiedad', 'Planos aprobados', 'Contrato con profesional', 'Cédula del propietario', 'Pago de impuesto predial', 'Copia de Cédula del Profesional'],
   },
 ]
 
-// ── Schema del paso 1 ──
-const step1Schema = z.object({
+const step2Schema = z.object({
   tipoTramite: z.enum(['LINEA_FABRICAS', 'APROBACION_PLANOS', 'PERMISO_CONSTRUCCION'], {
     required_error: 'Selecciona el tipo de trámite',
   }),
@@ -59,19 +50,27 @@ const step1Schema = z.object({
   area: z.coerce.number().optional(),
   descripcion: z.string().optional(),
 })
-type Step1Form = z.infer<typeof step1Schema>
+type Step2Form = z.infer<typeof step2Schema>
 
 const STEPS = [
-  { num: 1, label: 'Tipo de Trámite', icon: FileText },
-  { num: 2, label: 'Datos del Predio', icon: MapPin },
-  { num: 3, label: 'Documentos', icon: Upload },
-  { num: 4, label: 'Confirmación', icon: CheckCircle2 },
+  { num: 1, label: 'Propietario', icon: User },
+  { num: 2, label: 'Tipo de Trámite', icon: FileText },
+  { num: 3, label: 'Datos del Predio', icon: MapPin },
+  { num: 4, label: 'Documentos', icon: Upload },
+  { num: 5, label: 'Confirmación', icon: CheckCircle2 },
 ]
 
-export function NuevaSolicitud() {
+export function NuevoTramite() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
   const [step, setStep] = useState(1)
+
+  // Paso 1: propietario
+  const [cedulaBusqueda, setCedulaBusqueda] = useState('')
+  const [buscando, setBuscando] = useState(false)
+  const [ciudadanoEncontrado, setCiudadanoEncontrado] = useState<any>(null)
+  const [ciudadanoCedula, setCiudadanoCedula] = useState<string>('')
+
+  // Pasos siguientes
   const [tipoSeleccionado, setTipoSeleccionado] = useState<TipoTramite | null>(null)
   const [solicitudId, setSolicitudId] = useState<string | null>(null)
   const [archivos, setArchivos] = useState<File[]>([])
@@ -79,32 +78,62 @@ export function NuevaSolicitud() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const esInvitado = user?.role === 'INVITADO'
-
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step1Form>({
-    resolver: zodResolver(step1Schema),
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step2Form>({
+    resolver: zodResolver(step2Schema),
     defaultValues: { ubicacion: 'URBANO' },
   })
 
   const tramiteInfo = TRAMITES.find(t => t.value === tipoSeleccionado)
 
-  // ── PASO 1: Selección de tipo ──
-  const handleSelectTipo = (tipo: TipoTramite) => {
-    setTipoSeleccionado(tipo)
-    setValue('tipoTramite', tipo)
+  // ── PASO 1: Buscar propietario por cédula ──
+  const buscarCiudadano = async () => {
+    if (!cedulaBusqueda || cedulaBusqueda.length !== 10) {
+      setError('La cédula debe tener 10 dígitos')
+      return
+    }
+    setBuscando(true)
+    setError(null)
+    try {
+      const { data } = await api.get(`/users?cedula=${cedulaBusqueda}&limit=1`)
+      const usuarios = data.data || []
+      const ciudadano = usuarios.find((u: any) => u.cedula === cedulaBusqueda)
+      if (ciudadano) {
+        setCiudadanoEncontrado(ciudadano)
+      } else {
+        // No encontrado — el sistema lo crea automáticamente al crear la solicitud
+        setCiudadanoEncontrado(null)
+      }
+      setCiudadanoCedula(cedulaBusqueda)
+    } catch {
+      setCiudadanoCedula(cedulaBusqueda)
+      setCiudadanoEncontrado(null)
+    } finally {
+      setBuscando(false)
+    }
   }
 
   const onStep1Next = () => {
-    if (!tipoSeleccionado) {
-      setError('Selecciona el tipo de trámite para continuar')
+    if (!ciudadanoCedula) {
+      setError('Ingresa la cédula del propietario del predio')
       return
     }
     setError(null)
     setStep(2)
   }
 
-  // ── PASO 2: Crear solicitud con datos del predio ──
-  const onStep2 = async (data: Step1Form) => {
+  // ── PASO 2: Selección de tipo de trámite ──
+  const onStep2Next = () => {
+    if (!tipoSeleccionado) {
+      setError('Selecciona el tipo de trámite para continuar')
+      return
+    }
+    setError(null)
+    setValue('tipoTramite', tipoSeleccionado)
+    setStep(3)
+  }
+
+  // ── PASO 3: Crear solicitud con datos del predio ──
+  const onStep3 = async (data: Step2Form) => {
     setLoading(true)
     setError(null)
     try {
@@ -114,9 +143,10 @@ export function NuevaSolicitud() {
         direccion: data.direccion,
         area: data.area,
         descripcion: data.descripcion,
-      })
+        ciudadanoCedula,
+      } as any)
       setSolicitudId(res.id)
-      setStep(3)
+      setStep(4)
     } catch (e: any) {
       setError(e.response?.data?.message || 'Error al crear la solicitud')
     } finally {
@@ -124,7 +154,7 @@ export function NuevaSolicitud() {
     }
   }
 
-  // ── PASO 3: Subir archivos ──
+  // ── PASO 4: Subir archivos ──
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     const valid = files.filter(f => {
@@ -152,7 +182,7 @@ export function NuevaSolicitud() {
         await anexosApi.upload(solicitudId, file)
         setUploadProgress(p => ({ ...p, [file.name]: true }))
       }
-      setStep(4)
+      setStep(5)
     } catch (e: any) {
       setError(e.response?.data?.message || 'Error al subir archivos')
     } finally {
@@ -160,14 +190,14 @@ export function NuevaSolicitud() {
     }
   }
 
-  // ── PASO 4: Enviar ──
+  // ── PASO 5: Enviar ──
   const handleEnviar = async () => {
     if (!solicitudId) return
     setLoading(true)
     setError(null)
     try {
       await solicitudesApi.enviar(solicitudId)
-      navigate(`/ciudadano/solicitudes/${solicitudId}`)
+      navigate(`/arquitecto/tramites/${solicitudId}`)
     } catch (e: any) {
       setError(e.response?.data?.message || 'Error al enviar la solicitud')
     } finally {
@@ -175,33 +205,27 @@ export function NuevaSolicitud() {
     }
   }
 
+  const ARQCOLOR = '#D97706'
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto space-y-6">
 
-      {/* Modal: completar perfil si es INVITADO */}
-      {esInvitado && (
-        <CompletarPerfilModal
-          allowClose
-          onClose={() => navigate('/ciudadano')}
-          onSuccess={() => {}}
-        />
-      )}
-
       <div>
-        <h1 className="font-heading text-2xl font-bold text-blue-950">Nueva Solicitud</h1>
-        <p className="text-blue-800 mt-1 text-sm">Inicia un trámite de ordenamiento territorial ante el GAD Municipal de Cañar</p>
+        <h1 className="font-heading text-2xl font-bold text-blue-950">Nuevo Trámite</h1>
+        <p className="text-blue-800 mt-1 text-sm">Inicia un trámite en nombre del ciudadano propietario del predio</p>
       </div>
 
-      {/* ── Stepper ── */}
+      {/* Stepper */}
       <div className="flex items-center gap-1">
         {STEPS.map((s, i) => (
           <div key={s.num} className="flex items-center gap-1 flex-1">
             <div className={cn(
               'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all flex-shrink-0',
               step > s.num ? 'bg-green-500 text-white' :
-              step === s.num ? 'bg-blue-600 text-white shadow-lg' :
+              step === s.num ? 'text-white shadow-lg' :
               'bg-slate-200 text-slate-500',
-            )}>
+            )}
+              style={step === s.num ? { background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)` } : {}}>
               {step > s.num ? <CheckCircle2 size={14} /> : s.num}
             </div>
             <span className={cn(
@@ -223,10 +247,105 @@ export function NuevaSolicitud() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════
-          PASO 1: Selección de tipo de trámite
-      ══════════════════════════════════════ */}
+      {/* ── PASO 1: Propietario ── */}
       {step === 1 && (
+        <div className="space-y-4">
+          <div className="glass-card p-6 space-y-5">
+            <div>
+              <h2 className="font-heading font-semibold text-blue-950 mb-1 flex items-center gap-2">
+                <User size={18} style={{ color: ARQCOLOR }} />
+                Datos del propietario del predio
+              </h2>
+              <p className="text-slate-500 text-sm">
+                Ingresa la cédula del ciudadano propietario. Si no tiene cuenta en el sistema, se le creará automáticamente.
+              </p>
+            </div>
+
+            <div>
+              <label className="input-label">Cédula del Propietario *</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={cedulaBusqueda}
+                  onChange={e => {
+                    setCedulaBusqueda(e.target.value.replace(/\D/g, '').slice(0, 10))
+                    setCiudadanoEncontrado(null)
+                    setCiudadanoCedula('')
+                  }}
+                  className="input-field flex-1"
+                  placeholder="0102030405"
+                  maxLength={10}
+                  id="propietario-cedula"
+                />
+                <button
+                  type="button"
+                  onClick={buscarCiudadano}
+                  disabled={buscando || cedulaBusqueda.length !== 10}
+                  className="px-4 py-2 rounded-xl font-semibold text-white text-sm flex items-center gap-2 transition-all"
+                  style={{ background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`, opacity: cedulaBusqueda.length !== 10 ? 0.5 : 1 }}
+                >
+                  {buscando ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={16} />}
+                  Buscar
+                </button>
+              </div>
+            </div>
+
+            {/* Resultado de búsqueda */}
+            {ciudadanoCedula && (
+              <div className={cn(
+                'p-4 rounded-xl border',
+                ciudadanoEncontrado
+                  ? 'bg-green-50 border-green-200'
+                  : 'border-blue-200'
+              )}
+                style={!ciudadanoEncontrado ? { background: 'rgba(37,99,235,0.04)' } : {}}>
+                {ciudadanoEncontrado ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <UserCheck size={18} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-blue-950">
+                        {ciudadanoEncontrado.nombre} {ciudadanoEncontrado.apellido}
+                      </p>
+                      <p className="text-sm text-slate-500">CI: {ciudadanoEncontrado.cedula} • {ciudadanoEncontrado.email}</p>
+                      <p className="text-xs text-green-600 font-semibold mt-0.5">✅ Ciudadano registrado en el sistema</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(37,99,235,0.1)' }}>
+                      <User size={18} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-blue-950">Cédula: {ciudadanoCedula}</p>
+                      <p className="text-sm text-slate-500">Ciudadano no registrado aún</p>
+                      <p className="text-xs text-blue-600 font-semibold mt-0.5">
+                        ℹ️ Se creará una cuenta básica al registrar el trámite
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={onStep1Next}
+            disabled={!ciudadanoCedula}
+            id="step1-next"
+            className="btn-primary w-full"
+            style={{ background: ciudadanoCedula ? `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)` : '', border: 'none', opacity: !ciudadanoCedula ? 0.5 : 1 }}
+          >
+            <span>Continuar</span><ArrowRight size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* ── PASO 2: Tipo de trámite ── */}
+      {step === 2 && (
         <div className="space-y-4">
           <div className="glass-card p-5">
             <h2 className="font-heading font-semibold text-blue-950 mb-1">Selecciona el tipo de trámite</h2>
@@ -237,7 +356,7 @@ export function NuevaSolicitud() {
                 <button
                   key={t.value}
                   type="button"
-                  onClick={() => handleSelectTipo(t.value)}
+                  onClick={() => setTipoSeleccionado(t.value)}
                   className={cn(
                     'w-full text-left p-5 rounded-2xl border-2 transition-all group',
                     tipoSeleccionado === t.value
@@ -251,40 +370,19 @@ export function NuevaSolicitud() {
                   } : {}}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl flex-shrink-0 transition-all"
+                    <div className="p-3 rounded-xl flex-shrink-0"
                       style={{
                         background: tipoSeleccionado === t.value ? `${t.color}20` : 'rgba(0,0,0,0.04)',
                         color: tipoSeleccionado === t.value ? t.color : '#64748b',
                       }}>
                       {t.icon}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <p className="font-bold text-blue-950 text-base">{t.label}</p>
-                        {tipoSeleccionado === t.value && (
-                          <CheckCircle2 size={20} style={{ color: t.color }} />
-                        )}
+                        <p className="font-bold text-blue-950">{t.label}</p>
+                        {tipoSeleccionado === t.value && <CheckCircle2 size={20} style={{ color: t.color }} />}
                       </div>
                       <p className="text-slate-500 text-sm mt-1 leading-relaxed">{t.desc}</p>
-                      
-                      {/* Documentos requeridos */}
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {t.docs.slice(0, 3).map(doc => (
-                          <span key={doc} className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{
-                              background: tipoSeleccionado === t.value ? `${t.color}15` : 'rgba(0,0,0,0.04)',
-                              color: tipoSeleccionado === t.value ? t.color : '#64748b',
-                              border: `1px solid ${tipoSeleccionado === t.value ? `${t.color}30` : 'rgba(0,0,0,0.08)'}`,
-                            }}>
-                            {doc}
-                          </span>
-                        ))}
-                        {t.docs.length > 3 && (
-                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: '#94a3b8' }}>
-                            +{t.docs.length - 3} más
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </button>
@@ -292,46 +390,40 @@ export function NuevaSolicitud() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onStep1Next}
-            disabled={!tipoSeleccionado}
-            id="step1-next"
-            className="btn-primary w-full"
-          >
-            <span>Continuar</span><ArrowRight size={18} />
-          </button>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1">
+              <ArrowLeft size={18} /> Atrás
+            </button>
+            <button type="button" onClick={onStep2Next} disabled={!tipoSeleccionado} id="step2-next" className="btn-primary flex-1"
+              style={{ background: tipoSeleccionado ? `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)` : '', border: 'none' }}>
+              <span>Continuar</span><ArrowRight size={18} />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* ══════════════════════════════════════
-          PASO 2: Datos del predio
-      ══════════════════════════════════════ */}
-      {step === 2 && (
-        <form onSubmit={handleSubmit(onStep2)} className="space-y-4">
-          {/* Banner del tipo seleccionado */}
+      {/* ── PASO 3: Datos del predio ── */}
+      {step === 3 && (
+        <form onSubmit={handleSubmit(onStep3)} className="space-y-4">
           {tramiteInfo && (
             <div className="flex items-center gap-3 p-4 rounded-xl"
               style={{ background: `${tramiteInfo.color}10`, border: `1px solid ${tramiteInfo.color}30` }}>
               <div style={{ color: tramiteInfo.color }}>{tramiteInfo.icon}</div>
               <div>
                 <p className="font-bold text-blue-950 text-sm">{tramiteInfo.label}</p>
-                <p className="text-slate-500 text-xs">Completa los datos del predio</p>
+                <p className="text-slate-500 text-xs">Para: CI {ciudadanoCedula} {ciudadanoEncontrado ? `— ${ciudadanoEncontrado.nombre} ${ciudadanoEncontrado.apellido}` : ''}</p>
               </div>
             </div>
           )}
 
           <div className="glass-card p-6 space-y-5">
-            {/* Ubicación */}
             <div>
               <label className="input-label">Ubicación del Predio *</label>
               <div className="grid grid-cols-2 gap-3">
                 {(['URBANO', 'RURAL'] as const).map(u => (
                   <label key={u} className={cn(
                     'flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all',
-                    watch('ubicacion') === u
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                    watch('ubicacion') === u ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'
                   )}>
                     <input {...register('ubicacion')} type="radio" value={u} className="sr-only" />
                     <Building2 size={18} className={watch('ubicacion') === u ? 'text-blue-600' : 'text-slate-400'} />
@@ -341,10 +433,8 @@ export function NuevaSolicitud() {
                   </label>
                 ))}
               </div>
-              {errors.ubicacion && <p className="input-error"><AlertCircle size={12} />{errors.ubicacion.message}</p>}
             </div>
 
-            {/* Dirección */}
             <div>
               <label className="input-label">Dirección del Predio *</label>
               <input {...register('direccion')} id="predio-direccion" className="input-field"
@@ -352,13 +442,11 @@ export function NuevaSolicitud() {
               {errors.direccion && <p className="input-error"><AlertCircle size={12} />{errors.direccion.message}</p>}
             </div>
 
-            {/* Área */}
             <div>
               <label className="input-label">Área del Predio (m²) <span className="text-slate-400 normal-case">— opcional</span></label>
               <input {...register('area')} type="number" step="0.01" id="predio-area" className="input-field" placeholder="150.5" />
             </div>
 
-            {/* Descripción */}
             <div>
               <label className="input-label">Descripción adicional <span className="text-slate-400 normal-case">— opcional</span></label>
               <textarea {...register('descripcion')} id="predio-descripcion" className="input-field resize-none" rows={3}
@@ -367,22 +455,19 @@ export function NuevaSolicitud() {
           </div>
 
           <div className="flex gap-3">
-            <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1">
+            <button type="button" onClick={() => setStep(2)} className="btn-secondary flex-1">
               <ArrowLeft size={18} /> Atrás
             </button>
-            <button type="submit" disabled={loading} id="step2-next" className="btn-primary flex-1">
-              {loading
-                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <><span>Siguiente</span><ArrowRight size={18} /></>}
+            <button type="submit" disabled={loading} id="step3-next" className="btn-primary flex-1"
+              style={{ background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`, border: 'none' }}>
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>Siguiente</span><ArrowRight size={18} /></>}
             </button>
           </div>
         </form>
       )}
 
-      {/* ══════════════════════════════════════
-          PASO 3: Documentos
-      ══════════════════════════════════════ */}
-      {step === 3 && (
+      {/* ── PASO 4: Documentos ── */}
+      {step === 4 && (
         <div className="space-y-4">
           <div className="glass-card p-6 space-y-5">
             <div>
@@ -390,11 +475,10 @@ export function NuevaSolicitud() {
               <p className="text-slate-500 text-sm">Escaneados en PDF o fotos JPG/PNG. Máximo 10 MB por archivo.</p>
             </div>
 
-            {/* Lista de documentos sugeridos */}
             {tramiteInfo && (
               <div className="p-4 rounded-xl" style={{ background: `${tramiteInfo.color}08`, border: `1px solid ${tramiteInfo.color}20` }}>
                 <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: tramiteInfo.color }}>
-                  📋 Documentos requeridos para {tramiteInfo.label}
+                  📋 Documentos para {tramiteInfo.label}
                 </p>
                 <ul className="space-y-1">
                   {tramiteInfo.docs.map(doc => (
@@ -407,22 +491,20 @@ export function NuevaSolicitud() {
               </div>
             )}
 
-            {/* Zona de carga */}
-            <label className="block border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-8 text-center cursor-pointer transition-all group bg-white">
+            <label className="block border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-xl p-8 text-center cursor-pointer transition-all group bg-white">
               <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileAdd} className="sr-only" id="file-upload" />
-              <Upload size={32} className="text-slate-400 group-hover:text-blue-500 mx-auto mb-3 transition-colors" />
-              <p className="text-slate-600 group-hover:text-blue-700 transition-colors font-medium">
+              <Upload size={32} className="text-slate-400 group-hover:text-amber-500 mx-auto mb-3 transition-colors" />
+              <p className="text-slate-600 group-hover:text-amber-700 transition-colors font-medium">
                 Haz clic o arrastra archivos aquí
               </p>
               <p className="text-slate-400 text-sm mt-1">PDF, JPG, PNG — máximo 10 MB</p>
             </label>
 
-            {/* Lista de archivos */}
             {archivos.length > 0 && (
               <div className="space-y-2">
                 {archivos.map((f, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <FileText size={18} className="text-blue-500 flex-shrink-0" />
+                    <FileText size={18} className="text-amber-500 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-blue-950 text-sm font-medium truncate">{f.name}</p>
                       <p className="text-slate-400 text-xs">{(f.size / 1024).toFixed(1)} KB</p>
@@ -440,11 +522,12 @@ export function NuevaSolicitud() {
           </div>
 
           <div className="flex gap-3">
-            <button type="button" onClick={() => setStep(2)} className="btn-secondary flex-1">
+            <button type="button" onClick={() => setStep(3)} className="btn-secondary flex-1">
               <ArrowLeft size={18} /> Atrás
             </button>
-            <button type="button" id="step3-upload" disabled={loading || archivos.length === 0}
-              onClick={uploadArchivos} className="btn-primary flex-1">
+            <button type="button" id="step4-upload" disabled={loading || archivos.length === 0}
+              onClick={uploadArchivos} className="btn-primary flex-1"
+              style={{ background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`, border: 'none', opacity: archivos.length === 0 ? 0.5 : 1 }}>
               {loading
                 ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <><Upload size={18} /> Subir y continuar</>}
@@ -453,23 +536,31 @@ export function NuevaSolicitud() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════
-          PASO 4: Confirmación y envío
-      ══════════════════════════════════════ */}
-      {step === 4 && (
+      {/* ── PASO 5: Confirmación y envío ── */}
+      {step === 5 && (
         <div className="glass-card p-6 space-y-5">
           <div className="text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 border-2 border-green-400 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 size={32} className="text-green-600" />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'rgba(217,119,6,0.15)', border: `2px solid rgba(217,119,6,0.4)` }}>
+              <CheckCircle2 size={32} style={{ color: ARQCOLOR }} />
             </div>
             <h2 className="font-heading font-bold text-blue-950 text-xl mb-2">¡Todo listo para enviar!</h2>
             <p className="text-slate-500 text-sm max-w-sm mx-auto">
-              Al confirmar, la solicitud será enviada a la Secretaría del GAD para verificación documental y posterior revisión técnica.
+              Al confirmar, la solicitud será enviada a la Secretaría del GAD para verificación documental.
             </p>
           </div>
 
           {/* Resumen */}
           <div className="rounded-xl border border-slate-200 p-4 space-y-3 bg-slate-50">
+            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)' }}>
+              <User size={16} style={{ color: ARQCOLOR }} />
+              <div>
+                <p className="font-bold text-blue-950 text-sm">
+                  {ciudadanoEncontrado ? `${ciudadanoEncontrado.nombre} ${ciudadanoEncontrado.apellido}` : `Propietario CI: ${ciudadanoCedula}`}
+                </p>
+                <p className="text-slate-400 text-xs">Ciudadano propietario del predio</p>
+              </div>
+            </div>
             {tramiteInfo && (
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg" style={{ background: `${tramiteInfo.color}15`, color: tramiteInfo.color }}>
@@ -477,7 +568,7 @@ export function NuevaSolicitud() {
                 </div>
                 <div>
                   <p className="font-bold text-blue-950 text-sm">{tramiteInfo.label}</p>
-                  <p className="text-slate-400 text-xs">Tipo de trámite seleccionado</p>
+                  <p className="text-slate-400 text-xs">Tipo de trámite</p>
                 </div>
               </div>
             )}
@@ -488,20 +579,17 @@ export function NuevaSolicitud() {
             <div className="flex items-center gap-2 text-green-600 font-medium text-sm">
               <CheckCircle2 size={14} /> {archivos.length} documento(s) adjuntado(s)
             </div>
-            <div className="flex items-center gap-2 text-blue-600 font-medium text-sm">
-              <FileText size={14} /> Firma digital lista para aplicar
-            </div>
           </div>
 
-          {/* Flujo de revisión */}
-          <div className="p-4 rounded-xl" style={{ background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.1)' }}>
-            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3">Flujo de revisión</p>
+          {/* Flujo */}
+          <div className="p-4 rounded-xl" style={{ background: 'rgba(217,119,6,0.04)', border: '1px solid rgba(217,119,6,0.1)' }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: ARQCOLOR }}>Flujo de revisión</p>
             <div className="flex items-center gap-2 flex-wrap">
               {[
                 { label: 'Secretaría', desc: 'Verifica docs', color: '#D97706' },
-                { label: 'Técnico', desc: 'Evalúa contenido', color: '#2E8B57' },
+                { label: 'Técnico', desc: 'Evalúa predio', color: '#2E8B57' },
                 { label: 'Financiero', desc: 'Gestiona cobro', color: '#7C3AED' },
-                { label: 'Tú', desc: 'Recibes resultado', color: '#2563EB' },
+                { label: 'Resultado', desc: 'Notifica al ciudadano', color: '#2563EB' },
               ].map((item, i, arr) => (
                 <div key={item.label} className="flex items-center gap-2">
                   <div className="text-center">
@@ -519,14 +607,17 @@ export function NuevaSolicitud() {
           </div>
 
           <p className="text-xs text-slate-400 leading-relaxed border-t border-slate-200 pt-4">
-            Al confirmar y enviar, declaras que los datos ingresados son verídicos y aceptas su verificación técnica.
+            Al enviar, confirmas que los datos son verídicos y actúas como representante
+            técnico del ciudadano para este trámite.
           </p>
 
           <div className="flex gap-3">
-            <button type="button" onClick={() => setStep(3)} className="btn-secondary flex-1">
+            <button type="button" onClick={() => setStep(4)} className="btn-secondary flex-1">
               <ArrowLeft size={18} /> Atrás
             </button>
-            <button type="button" id="step4-enviar" disabled={loading} onClick={handleEnviar} className="btn-success flex-1">
+            <button type="button" id="step5-enviar" disabled={loading} onClick={handleEnviar}
+              className="btn-primary flex-1"
+              style={{ background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`, border: 'none' }}>
               {loading
                 ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <><FileText size={18} /> Confirmar y Enviar</>}

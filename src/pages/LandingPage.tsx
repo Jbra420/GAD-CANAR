@@ -1,512 +1,512 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowRight, FileText, CheckCircle2, Clock, Users, Shield,
-  MapPin, Zap, Star, AlertCircle, BookOpen, MousePointer,
-  Upload, Eye, Award, ChevronRight, Building2, Layers, HardHat, Factory,
+  ArrowRight, Shield, Clock, FileText, CheckCircle2, Star, MapPin, Users,
+  Search, HardHat, XCircle, AlertCircle, Loader, HelpCircle
 } from 'lucide-react'
-import { LandingTopbar } from '@/components/LandingTopbar'
-
-// ─── Datos ────────────────────────────────────────────────────────────────────
+import { solicitudesApi } from '@/lib/apiCalls'
 
 const STATS = [
-  { value: '3,200+', label: 'Trámites procesados', icon: FileText },
-  { value: '48h', label: 'Tiempo promedio', icon: Clock },
-  { value: '98%', label: 'Satisfacción', icon: Star },
-  { value: '12', label: 'Técnicos activos', icon: Users },
+  { value: '3,200+', label: 'Planos y Proyectos Aprobados', icon: FileText },
+  { value: '48h', label: 'Tiempo Promedio de Revisión', icon: Clock },
+  { value: '250+', label: 'Profesionales Habilitados', icon: Star },
+  { value: '12', label: 'Analistas Técnicos GAD', icon: Users },
 ]
 
-const TRAMITES_DETALLE = [
+const FEATURES = [
   {
-    icon: Factory,
-    color: '#D97706',
-    bg: 'rgba(217,119,6,0.08)',
-    border: 'rgba(217,119,6,0.25)',
-    tag: 'Más solicitado',
-    title: 'Línea de Fábricas',
-    desc: 'Certificado oficial que determina el lindero frontal de un predio respecto a la vía pública. Indispensable para cualquier obra.',
-    tiempo: '5–10 días hábiles',
-    costo: 'Según ordenanza',
-    requisitos: [
-      'Copia de escritura o título de propiedad',
-      'Copia de cédula del propietario',
-      'Ficha catastral actualizada',
-      'Plano de ubicación del predio',
-    ],
-  },
-  {
-    icon: Layers,
+    icon: FileText,
+    title: 'Línea de Fábrica Digital',
+    desc: 'Obtención rápida de informes de regulación urbana y compatibilidad de uso de suelo.',
     color: '#2563EB',
-    bg: 'rgba(37,99,235,0.08)',
-    border: 'rgba(37,99,235,0.25)',
-    tag: 'Proceso técnico',
-    title: 'Aprobación de Planos',
-    desc: 'Revisión y aprobación técnica oficial de los planos arquitectónicos y estructurales antes de ejecutar cualquier construcción.',
-    tiempo: '15–20 días hábiles',
-    costo: 'Según m² de construcción',
-    requisitos: [
-      'Título de propiedad del predio',
-      'Planos arquitectónicos (formato DWG/PDF)',
-      'Planos estructurales firmados por ingeniero',
-      'Memoria de cálculo estructural',
-      'Cédula del propietario',
-      'Pago de impuesto predial al día',
-    ],
+    bg: 'rgba(37,99,235,0.06)',
+    border: 'rgba(37,99,235,0.15)',
   },
-  {
-    icon: HardHat,
-    color: '#16A34A',
-    bg: 'rgba(22,163,74,0.08)',
-    border: 'rgba(22,163,74,0.25)',
-    tag: 'Autorización final',
-    title: 'Permiso de Construcción',
-    desc: 'Autorización municipal para ejecutar obras de construcción, ampliación o remodelación. Requerido antes de iniciar cualquier obra.',
-    tiempo: '10–15 días hábiles',
-    costo: 'Según área y tipo de obra',
-    requisitos: [
-      'Planos aprobados por el GAD',
-      'Contrato con profesional responsable',
-      'Título de propiedad del predio',
-      'Cédula del propietario',
-      'Pago de impuesto predial',
-      'Línea de fábricas vigente',
-    ],
-  },
-]
-
-const REQUISITOS_CUENTA = [
   {
     icon: Shield,
-    title: 'Cédula de ciudadanía',
-    desc: 'Documento de identidad ecuatoriano o pasaporte vigente.',
-    color: '#2563EB',
+    title: 'Aprobación de Planos',
+    desc: 'Envío técnico de proyectos arquitectónicos y estructurales para revisión ágil de los analistas.',
+    color: '#EF4444',
+    bg: 'rgba(239,68,68,0.06)',
+    border: 'rgba(239,68,68,0.15)',
   },
   {
     icon: MapPin,
-    title: 'Datos del predio',
-    desc: 'Dirección, número catastral y ubicación (urbano o rural).',
-    color: '#D97706',
-  },
-  {
-    icon: FileText,
-    title: 'Documentos digitalizados',
-    desc: 'Escaneos en PDF, JPG o PNG. Máximo 10 MB por archivo.',
-    color: '#16A34A',
-  },
-  {
-    icon: Zap,
-    title: 'Correo electrónico activo',
-    desc: 'Para recibir notificaciones y el resultado de tu trámite.',
-    color: '#CC2229',
+    title: 'Permisos de Construcción',
+    desc: 'Licenciamiento de edificación 100% en línea para áreas urbanas y rurales del cantón.',
+    color: '#22C55E',
+    bg: 'rgba(34,197,94,0.06)',
+    border: 'rgba(34,197,94,0.15)',
   },
 ]
 
-const GUIA_PASOS = [
-  {
-    num: '01',
-    icon: MousePointer,
-    title: 'Crea tu cuenta',
-    desc: 'Regístrate con tu correo en menos de 2 minutos. Sin papeleo, sin filas.',
-    tip: 'También puedes ingresar rápido como Invitado si no tienes cuenta aún.',
-    color: '#2563EB',
-    bg: 'rgba(37,99,235,0.06)',
-  },
-  {
-    num: '02',
-    icon: Building2,
-    title: 'Elige tu trámite',
-    desc: 'Selecciona entre Línea de Fábricas, Aprobación de Planos o Permiso de Construcción.',
-    tip: 'El sistema te indica exactamente qué documentos necesitas según el trámite.',
-    color: '#D97706',
-    bg: 'rgba(217,119,6,0.06)',
-  },
-  {
-    num: '03',
-    icon: Upload,
-    title: 'Sube tus documentos',
-    desc: 'Adjunta los archivos digitalizados. El sistema valida el formato automáticamente.',
-    tip: 'Puedes subir en varias sesiones. Tu progreso se guarda automáticamente.',
-    color: '#16A34A',
-    bg: 'rgba(22,163,74,0.06)',
-  },
-  {
-    num: '04',
-    icon: Eye,
-    title: 'Seguimiento en vivo',
-    desc: 'Monitorea cada etapa: Secretaría → Técnico → Financiero → Resolución.',
-    tip: 'Recibirás una notificación por correo en cada cambio de estado.',
-    color: '#7C3AED',
-    bg: 'rgba(124,58,237,0.06)',
-  },
-  {
-    num: '05',
-    icon: Award,
-    title: 'Recibe tu certificado',
-    desc: 'Descarga tu documento oficial con firma digital, válido ante cualquier entidad.',
-    tip: 'El certificado tiene QR de verificación y es legalmente equivalente al físico.',
-    color: '#CC2229',
-    bg: 'rgba(204,34,41,0.06)',
-  },
-]
+const TIPO_TRAMITE_LABEL: Record<string, string> = {
+  LINEA_FABRICAS: 'Línea de Fábricas',
+  APROBACION_PLANOS: 'Aprobación de Planos',
+  PERMISO_CONSTRUCCION: 'Permiso de Construcción',
+}
 
-// ─── Componente principal ────────────────────────────────────────────────────
+const ESTADO_INFO: Record<string, { label: string; color: string; bg: string; step: number }> = {
+  BORRADOR: { label: 'Borrador (Pendiente Envío)', color: '#64748B', bg: '#F1F5F9', step: 1 },
+  PENDIENTE_SECRETARIA: { label: 'Enviado (Espera Validación Documental)', color: '#F5C100', bg: 'rgba(245,193,0,0.1)', step: 1 },
+  OBSERVADO: { label: 'Observado por Secretaría (Devuelto)', color: '#EF4444', bg: 'rgba(239,68,68,0.1)', step: 2 },
+  EN_REVISION_TECNICA: { label: 'En Revisión Técnica', color: '#2563EB', bg: 'rgba(37,99,235,0.1)', step: 2 },
+  PENDIENTE_PAGO: { label: 'Aprobado (Pendiente de Pago)', color: '#F5C100', bg: 'rgba(245,193,0,0.1)', step: 3 },
+  PAGADO: { label: 'Pago Registrado (En Firma Final)', color: '#22C55E', bg: 'rgba(34,197,94,0.1)', step: 3 },
+  APROBADO: { label: 'Aprobado y Concluido', color: '#22C55E', bg: 'rgba(34,197,94,0.1)', step: 4 },
+  RECHAZADO: { label: 'Rechazado Definitivamente', color: '#EF4444', bg: 'rgba(239,68,68,0.1)', step: 4 },
+}
 
 export function LandingPage() {
+  const [searchVal, setSearchVal] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [trackingResult, setTrackingResult] = useState<any>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  const handleTrack = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!searchVal.trim()) return
+
+    setLoading(true)
+    setError(null)
+    setTrackingResult(null)
+
+    try {
+      const isEmail = searchVal.includes('@')
+      const params = isEmail ? { email: searchVal.trim() } : { cedula: searchVal.trim() }
+      
+      const { data } = await solicitudesApi.seguimientoPublico(params)
+      
+      if (!data.solicitudes || data.solicitudes.length === 0) {
+        setError('El ciudadano se encuentra registrado, pero aún no tiene ningún trámite ingresado.')
+      } else {
+        setTrackingResult(data)
+        setModalOpen(true)
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || 
+        'No se encontraron registros que coincidan con la cédula o correo ingresado.'
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen text-slate-800 bg-slate-50 font-sans">
 
-      {/* ── TOPBAR INSTITUCIONAL ── */}
-      <LandingTopbar />
+      {/* NAVBAR PROTOTIPO */}
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm transition-all duration-300">
+        {/* Fila 1: Logo y Acciones */}
+        <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+          {/* Logo e Identidad */}
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo-gad.png"
+              alt="GAD Municipal de Cañar"
+              className="w-11 h-11 object-contain"
+            />
+            <div className="flex items-center">
+              <div className="text-left">
+                <p className="font-heading font-black text-xl leading-none text-blue-600 tracking-tight">
+                  CAÑAR
+                </p>
+                <p className="text-[#D4A800] font-bold text-[9px] tracking-wider uppercase mt-0.5">
+                  Cantón Intercultural
+                </p>
+              </div>
+              {/* Franja de Colores del Prototipo */}
+              <div className="flex flex-col gap-[3px] ml-4 justify-center h-7 border-l pl-3 border-slate-200">
+                <div className="w-5 h-[3px] bg-[#EF4444]" />
+                <div className="w-5 h-[3px] bg-[#F97316]" />
+                <div className="w-5 h-[3px] bg-[#F5C100]" />
+                <div className="w-5 h-[3px] bg-[#22C55E]" />
+                <div className="w-5 h-[3px] bg-[#2563EB]" />
+              </div>
+            </div>
+          </div>
 
-      {/* ── HERO ── */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(160deg, #f0f6ff 0%, #f8fafc 60%, #fff 100%)' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 70% 50%, rgba(37,99,235,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
-        <div className="max-w-7xl mx-auto px-6 py-20 lg:py-28 flex flex-col lg:flex-row items-center gap-12">
+          {/* Buscador Central (Estilo Prototipo) */}
+          <div className="hidden md:flex items-center justify-center flex-1 max-w-xs mx-8">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="text" 
+                placeholder="Buscar trámites o servicios..." 
+                className="w-full pl-9 pr-4 py-1.5 rounded-full bg-slate-100 border border-transparent focus:bg-white focus:border-blue-500 text-xs outline-none transition-all"
+              />
+            </div>
+          </div>
 
-          {/* Texto */}
-          <div className="flex-1 max-w-2xl animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6"
-              style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)' }}>
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#2563EB' }} />
-              <span className="text-xs font-bold tracking-wider text-blue-700">PORTAL CIUDADANO DIGITAL · GAD CAÑAR</span>
+          {/* Acceso y Registro */}
+          <div className="flex items-center gap-4">
+            <Link to="/login" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors">
+              <span className="w-5 h-5 flex items-center justify-center border border-slate-300 rounded-lg text-slate-500">→</span>
+              Ingreso Portal Técnico
+            </Link>
+            <a href="#registro-profesional" className="btn-primary px-4 py-2 text-xs shadow-md">
+              Habilitación Profesional
+            </a>
+          </div>
+        </div>
+
+        {/* Fila 2: Enlaces de Navegación */}
+        <div className="border-t border-slate-100 bg-white/95">
+          <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center justify-start gap-8 overflow-x-auto text-xs font-bold tracking-wider text-slate-600">
+            <a href="#inicio" className="text-blue-600 border-b-2 border-[#F5C100] pb-1 hover:text-blue-700">INICIO</a>
+            <a href="#servicios" className="hover:text-blue-600 transition-colors">TRÁMITES TÉCNICOS</a>
+            <a href="#seguimiento" className="hover:text-blue-600 transition-colors">CONSULTA EXPEDIENTES</a>
+            <a href="#registro-profesional" className="hover:text-blue-600 transition-colors">HABILITACIÓN PROFESIONAL</a>
+            <a href="#noticias" className="hover:text-blue-600 transition-colors">NOTICIAS GAD</a>
+          </div>
+        </div>
+      </nav>
+
+      {/* HERO SECTION CLARO */}
+      <section id="inicio" className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-slate-50 to-white py-16 lg:py-24 border-b border-slate-100">
+        {/* Glow de fondo */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-blue-100/30 blur-[120px] pointer-events-none -mr-40" />
+
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 items-center relative z-10">
+          
+          {/* Left Column: Heading and CTAs */}
+          <div className="lg:col-span-7 space-y-6 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.12)', color: '#2563EB', fontSize: '0.75rem', fontWeight: 600 }}>
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              PORTAL TÉCNICO DE PLANIFICACIÓN TERRITORIAL · GAD CAÑAR
             </div>
 
-            <h1 className="font-heading font-extrabold text-blue-950 mb-6 leading-tight"
-              style={{ fontSize: 'clamp(2.2rem,5vw,3.8rem)', lineHeight: 1.1 }}>
-              Tu trámite municipal,{' '}
-              <span style={{ color: '#2563EB' }}>sin filas</span>{' '}
-              y sin papel.
+            <h1 className="font-heading font-extrabold leading-tight text-4xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight">
+              Gestión Profesional <br/>
+              <span className="text-blue-600">de Proyectos y Planos</span>.
             </h1>
 
-            <p className="text-lg text-slate-600 mb-8 leading-relaxed" style={{ maxWidth: 520 }}>
-              Gestiona permisos de ordenamiento territorial del cantón Cañar de forma
-              100% digital. Desde tu casa, en cualquier momento.
+            <p className="text-base text-slate-600 max-w-xl leading-relaxed">
+              Plataforma oficial para arquitectos, ingenieros civiles y profesionales técnicos. Gestione de forma 100% digital la aprobación de planos, líneas de fábrica y permisos de edificación en el cantón Cañar.
             </p>
 
-            <div className="flex flex-wrap gap-3">
-              <Link to="/registro" className="btn-primary text-sm px-7 py-3.5">
-                Iniciar mi trámite <ArrowRight size={18} />
+            <div className="flex flex-wrap gap-4 pt-2">
+              <Link to="/login" className="btn-primary text-base px-8 py-3.5 shadow-lg">
+                Ingresar al Portal
+                <ArrowRight size={18} />
               </Link>
-              <a href="#tramites" className="btn-secondary text-sm px-7 py-3.5">
-                Ver trámites disponibles
+              <a href="#registro-profesional" className="btn-secondary text-base px-8 py-3.5">
+                Registrarme como Profesional
               </a>
             </div>
 
-            <div className="mt-8 flex items-center gap-3">
-              {[
-                { color: '#CC2229', label: 'Seguro' },
-                { color: '#2563EB', label: 'Rápido' },
-                { color: '#22C55E', label: 'Legal' },
-                { color: '#F5C100', label: 'Digital' },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <CheckCircle2 size={13} style={{ color }} />
-                  <span className="text-xs font-semibold text-slate-500">{label}</span>
-                </div>
-              ))}
+            {/* Check Features del Prototipo */}
+            <div className="flex flex-wrap items-center gap-6 pt-4 text-xs font-bold text-slate-500">
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-blue-500" /> Firma Electrónica (XAdES-BES)</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-green-500" /> Revisión Ágil</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-amber-500" /> Trazabilidad Completa</span>
             </div>
           </div>
 
-          {/* Escudo + Stats flotantes */}
-          <div className="flex-shrink-0 relative hidden lg:block">
-            <div className="relative w-72 h-72 flex items-center justify-center">
-              <div style={{
-                position: 'absolute', inset: 0, borderRadius: '50%',
-                background: 'conic-gradient(#CC2229 0deg 90deg, #2563EB 90deg 180deg, #22C55E 180deg 270deg, #F5C100 270deg 360deg)',
-                opacity: 0.08, filter: 'blur(20px)',
-              }} />
-              <img src="/logo-gad.png" alt="GAD Cañar"
-                className="w-48 h-48 object-contain relative z-10"
-                style={{ filter: 'drop-shadow(0 8px 24px rgba(37,99,235,0.2))' }} />
+          {/* Right Column: Escudo Flotante y Tarjetas Estadísticas */}
+          <div className="lg:col-span-5 relative flex items-center justify-center py-8 lg:py-0">
+            {/* Brillo circular detrás del escudo */}
+            <div className="absolute w-72 h-72 rounded-full bg-blue-200/20 blur-3xl" />
+            
+            {/* Escudo del GAD Cañar en el centro */}
+            <div className="relative z-10 w-44 h-56 bg-white/70 backdrop-blur-sm p-4 rounded-3xl border border-white/60 shadow-xl flex items-center justify-center">
+              <img
+                src="/logo-gad.png"
+                alt="Escudo de Cañar"
+                className="w-full h-full object-contain filter drop-shadow-md"
+              />
             </div>
 
-            {/* Stats flotantes */}
-            {[
-              { value: '3,200+', label: 'Trámites', color: '#2563EB', pos: { top: 0, left: -40 } },
-              { value: '98%', label: 'Satisfacción', color: '#16A34A', pos: { bottom: 20, right: -40 } },
-              { value: '48h', label: 'Promedio', color: '#D97706', pos: { bottom: 20, left: -40 } },
-            ].map(({ value, label, color, pos }) => (
-              <div key={label} className="absolute glass-card px-3 py-2 text-center animate-slide-up"
-                style={{ ...pos, minWidth: 80, borderColor: `${color}20` }}>
-                <p className="font-heading font-bold text-sm" style={{ color }}>{value}</p>
-                <p className="text-xs text-slate-500">{label}</p>
-              </div>
-            ))}
+            {/* Tarjeta Flotante 1 (Trámites) */}
+            <div className="absolute top-6 left-6 z-20 bg-white/95 backdrop-blur-sm border border-slate-100 rounded-2xl px-4 py-2.5 shadow-lg flex flex-col items-start min-w-[100px] text-left hover:scale-105 transition-transform">
+              <span className="text-blue-600 font-extrabold text-sm leading-none">3,200+</span>
+              <span className="text-slate-500 text-[10px] font-bold mt-0.5">Planos Aprobados</span>
+            </div>
+
+            {/* Tarjeta Flotante 2 (Promedio) */}
+            <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-sm border border-slate-100 rounded-2xl px-4 py-2.5 shadow-lg flex flex-col items-start min-w-[100px] text-left hover:scale-105 transition-transform">
+              <span className="text-amber-500 font-extrabold text-sm leading-none">48h</span>
+              <span className="text-slate-500 text-[10px] font-bold mt-0.5">Revisión Técnica</span>
+            </div>
+
+            {/* Tarjeta Flotante 3 (Satisfacción) */}
+            <div className="absolute bottom-12 right-2 z-20 bg-white/95 backdrop-blur-sm border border-slate-100 rounded-2xl px-4 py-2.5 shadow-lg flex flex-col items-start min-w-[110px] text-left hover:scale-105 transition-transform">
+              <span className="text-green-600 font-extrabold text-sm leading-none">250+</span>
+              <span className="text-slate-500 text-[10px] font-bold mt-0.5">Profesionales</span>
+            </div>
           </div>
+
         </div>
+      </section>
 
-        {/* Stats móvil */}
-        <div className="lg:hidden max-w-7xl mx-auto px-6 pb-10">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {STATS.map(s => (
-              <div key={s.label} className="glass-card p-4 text-center">
-                <p className="font-heading font-bold text-2xl text-blue-600">{s.value}</p>
-                <p className="text-xs text-slate-500 mt-1">{s.label}</p>
+      {/* SECCIÓN: SEGUIMIENTO DE TRÁMITES */}
+      <section id="seguimiento" className="py-12 bg-white border-b border-slate-100">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="bg-slate-50 border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-[#F5C100] to-green-500" />
+            <div className="grid md:grid-cols-12 gap-6 items-center">
+              <div className="md:col-span-5 text-left">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                  <Search size={18} className="text-blue-600" />
+                  Consulta de Expedientes Técnicos
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Consulte el estado de las solicitudes patrocinadas en nombre de su cliente ingresando la cédula del propietario o correo electrónico.
+                </p>
               </div>
-            ))}
+
+              <div className="md:col-span-7">
+                <form onSubmit={handleTrack} className="space-y-3">
+                  <div className="relative">
+                    <input
+                      id="trackInput"
+                      type="text"
+                      className="input-field pl-4 pr-12 py-3.5 bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-blue-500 text-xs rounded-2xl"
+                      placeholder="Cédula del propietario o correo del expediente"
+                      value={searchVal}
+                      onChange={(e) => { setSearchVal(e.target.value); setError(null) }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading || !searchVal.trim()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? <Loader size={15} className="animate-spin" /> : <Search size={15} />}
+                    </button>
+                  </div>
+
+                  {error && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs text-left">
+                      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── TRÁMITES DISPONIBLES ── */}
-      <section id="tramites" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-4"
-              style={{ background: 'rgba(37,99,235,0.08)', color: '#2563EB' }}>
-              TRÁMITES DISPONIBLES
-            </span>
-            <h2 className="font-heading font-bold text-3xl text-blue-950 mb-3">
-              ¿Qué trámites puedes gestionar?
-            </h2>
-            <p className="text-slate-500 max-w-lg mx-auto">
-              El portal digital del GAD Cañar te permite gestionar los tres trámites
-              principales de ordenamiento territorial de forma completamente digital.
-            </p>
+      {/* PORTAL PROFESIONALES: CLARO */}
+      <section id="registro-profesional" className="py-16 max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-4">
+            <HardHat size={28} />
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {TRAMITES_DETALLE.map((t, i) => (
-              <div key={t.title}
-                className="glass-card p-6 flex flex-col animate-slide-up hover:scale-[1.02] transition-transform"
-                style={{ animationDelay: `${i * 0.1}s`, borderColor: t.border }}>
-
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: t.bg, border: `1px solid ${t.border}` }}>
-                    <t.icon size={24} style={{ color: t.color }} />
-                  </div>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-                    style={{ background: t.bg, color: t.color, border: `1px solid ${t.border}` }}>
-                    {t.tag}
-                  </span>
-                </div>
-
-                <h3 className="font-heading font-bold text-lg text-blue-950 mb-2">{t.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed mb-5 flex-1">{t.desc}</p>
-
-                {/* Tiempos */}
-                <div className="flex gap-3 mb-5">
-                  <div className="flex-1 p-2.5 rounded-xl text-center" style={{ background: t.bg }}>
-                    <p className="text-xs font-bold" style={{ color: t.color }}>⏱ {t.tiempo}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Resolución</p>
-                  </div>
-                  <div className="flex-1 p-2.5 rounded-xl text-center" style={{ background: t.bg }}>
-                    <p className="text-xs font-bold" style={{ color: t.color }}>💰 {t.costo}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Tasa</p>
-                  </div>
-                </div>
-
-                {/* Requisitos */}
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Documentos requeridos:</p>
-                  <ul className="space-y-1.5">
-                    {t.requisitos.map(r => (
-                      <li key={r} className="flex items-start gap-2">
-                        <ChevronRight size={13} className="flex-shrink-0 mt-0.5" style={{ color: t.color }} />
-                        <span className="text-xs text-slate-600">{r}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <Link to="/registro"
-                  className="mt-5 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90"
-                  style={{ background: t.bg, color: t.color, border: `1px solid ${t.border}` }}>
-                  Iniciar este trámite <ArrowRight size={14} />
-                </Link>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-3xl font-extrabold text-slate-900">Registro y Habilitación de Firmas Técnicas</h2>
+          <p className="text-slate-500 max-w-xl mx-auto mt-2 text-sm leading-relaxed">
+            Si eres Arquitecto o Ingeniero Civil y requieres ingresar expedientes urbanísticos en nombre de tus clientes, solicita tu registro profesional para comenzar a operar de inmediato.
+          </p>
         </div>
-      </section>
 
-      {/* ── REQUISITOS PARA USAR LA APP ── */}
-      <section id="requisitos" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-12 items-center">
-
-            <div className="flex-1">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-4"
-                style={{ background: 'rgba(245,193,0,0.1)', color: '#D97706' }}>
-                ANTES DE EMPEZAR
+        <div className="max-w-3xl mx-auto bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm hover:border-blue-500 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center gap-6 text-left">
+          <div className="p-4 rounded-2xl bg-blue-50 text-blue-600 flex-shrink-0">
+            <CheckCircle2 size={36} />
+          </div>
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-bold text-slate-800 text-lg">Registro de Profesional Acreditado</h3>
+              <span className="px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider bg-green-50 text-green-700 border border-green-200">
+                Habilitación Inmediata
               </span>
-              <h2 className="font-heading font-bold text-3xl text-blue-950 mb-4">
-                ¿Qué necesito para usar el portal?
-              </h2>
-              <p className="text-slate-500 mb-8 leading-relaxed">
-                El acceso al portal es gratuito y abierto a todos los ciudadanos del cantón Cañar.
-                Solo necesitas tener estos elementos listos antes de crear tu solicitud.
-              </p>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                {REQUISITOS_CUENTA.map((r, i) => (
-                  <div key={r.title}
-                    className="flex items-start gap-3 p-4 rounded-2xl border animate-slide-up"
-                    style={{ animationDelay: `${i * 0.08}s`, borderColor: `${r.color}20`, background: `${r.color}05` }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${r.color}12` }}>
-                      <r.icon size={18} style={{ color: r.color }} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-blue-950">{r.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{r.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Nota importante */}
-              <div className="mt-6 flex items-start gap-3 p-4 rounded-2xl"
-                style={{ background: 'rgba(234,88,12,0.06)', border: '1px solid rgba(234,88,12,0.2)' }}>
-                <AlertCircle size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#EA580C' }} />
-                <div>
-                  <p className="text-sm font-semibold text-orange-800">Modo Invitado disponible</p>
-                  <p className="text-xs text-orange-700 mt-0.5 leading-relaxed">
-                    Puedes explorar el portal con acceso rápido (solo tu correo). Sin embargo, para enviar
-                    una solicitud formal deberás completar tu perfil con los datos completos.
-                  </p>
-                </div>
-              </div>
             </div>
-
-            {/* Ilustración de formatos */}
-            <div className="flex-shrink-0 w-full max-w-sm">
-              <div className="glass-card p-6" style={{ borderColor: 'rgba(37,99,235,0.15)' }}>
-                <div className="shield-divider mb-5" />
-                <h3 className="font-heading font-bold text-blue-950 mb-4">Formatos aceptados</h3>
-                {[
-                  { ext: 'PDF', desc: 'Documentos y escaneos', color: '#CC2229' },
-                  { ext: 'JPG/PNG', desc: 'Fotografías de documentos', color: '#2563EB' },
-                  { ext: 'DWG', desc: 'Planos técnicos (AutoCAD)', color: '#D97706' },
-                ].map(f => (
-                  <div key={f.ext} className="flex items-center gap-3 py-3 border-b border-slate-100 last:border-0">
-                    <span className="w-12 text-center text-xs font-bold py-1 rounded-lg"
-                      style={{ background: `${f.color}15`, color: f.color }}>
-                      {f.ext}
-                    </span>
-                    <span className="text-sm text-slate-600">{f.desc}</span>
-                    <CheckCircle2 size={14} className="ml-auto" style={{ color: '#22C55E' }} />
-                  </div>
-                ))}
-                <div className="mt-4 p-3 rounded-xl text-center"
-                  style={{ background: 'rgba(37,99,235,0.05)', border: '1px dashed rgba(37,99,235,0.2)' }}>
-                  <p className="text-xs font-bold text-blue-700">Límite por archivo: 10 MB</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Puedes adjuntar múltiples archivos</p>
-                </div>
-              </div>
+            <p className="text-slate-600 text-sm leading-relaxed">
+              Completa tus datos personales, título profesional y número de registro SENESCYT. Podrás iniciar sesión e ingresar expedientes técnicos inmediatamente. Tus credenciales profesionales y título se validarán con la copia de tu cédula al momento de iniciar tu primer trámite.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/registro-arquitecto"
+                className="btn-primary w-full sm:w-auto px-6 py-3 text-xs bg-slate-900 hover:bg-slate-800 shadow-none border-none text-white flex items-center justify-center gap-2"
+              >
+                Crear Cuenta Profesional <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── GUÍA RÁPIDA ── */}
-      <section id="guia" className="py-20" style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%)' }}>
+      {/* STATS SECTION CLARA */}
+      <section className="bg-slate-100/50 py-12 border-y border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-4"
-              style={{ background: 'rgba(37,99,235,0.08)', color: '#2563EB' }}>
-              <BookOpen size={11} className="inline mr-1" />
-              GUÍA RÁPIDA
-            </span>
-            <h2 className="font-heading font-bold text-3xl text-blue-950 mb-3">
-              Tu primer trámite en 5 pasos
-            </h2>
-            <p className="text-slate-500 max-w-md mx-auto">
-              Sigue esta guía y tendrás tu solicitud enviada en menos de 15 minutos.
-            </p>
-          </div>
-
-          {/* Timeline visual */}
-          <div className="relative">
-            {/* Línea conectora */}
-            <div className="hidden lg:block absolute top-16 left-1/2 -translate-x-1/2 w-px h-[calc(100%-8rem)]"
-              style={{ background: 'linear-gradient(180deg, #2563EB, #D97706, #16A34A, #7C3AED, #CC2229)' }} />
-
-            <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-5 lg:gap-4">
-              {GUIA_PASOS.map((paso, i) => (
-                <div key={paso.num}
-                  className="relative flex lg:flex-col items-start lg:items-center gap-4 lg:gap-3 p-5 rounded-2xl animate-slide-up"
-                  style={{ animationDelay: `${i * 0.1}s`, background: paso.bg, border: `1px solid ${paso.color}20` }}>
-
-                  {/* Número / icono */}
-                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center relative z-10 bg-white"
-                    style={{ boxShadow: `0 4px 16px ${paso.color}25`, border: `2px solid ${paso.color}30` }}>
-                    <paso.icon size={22} style={{ color: paso.color }} />
-                    <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white flex items-center justify-center font-bold"
-                      style={{ background: paso.color, fontSize: '0.6rem' }}>
-                      {i + 1}
-                    </span>
-                  </div>
-
-                  <div className="flex-1 lg:text-center">
-                    <p className="font-heading font-bold text-sm text-blue-950 mb-1">{paso.title}</p>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-2">{paso.desc}</p>
-                    <div className="inline-flex items-start gap-1 px-2 py-1.5 rounded-lg w-full lg:w-auto"
-                      style={{ background: `${paso.color}10` }}>
-                      <span style={{ color: paso.color, fontSize: '0.6rem' }}>💡</span>
-                      <span className="text-xs leading-tight" style={{ color: paso.color }}>{paso.tip}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* CTA dentro de la guía */}
-          <div className="mt-12 text-center">
-            <Link to="/registro" className="btn-primary px-10 py-4 text-sm">
-              Empezar ahora — es gratis <ArrowRight size={18} />
-            </Link>
-            <p className="mt-3 text-xs text-slate-400">
-              Sin instalaciones · Sin pago de suscripción · Acceso inmediato
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA FINAL + FOOTER ── */}
-      <section className="py-20 bg-blue-950 relative overflow-hidden">
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(245,193,0,0.05) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(34,197,94,0.04) 0%, transparent 60%)', pointerEvents: 'none' }} />
-
-        <div className="max-w-3xl mx-auto px-6 text-center relative z-10">
-          <img src="/logo-gad.png" alt="GAD Cañar"
-            className="w-16 h-16 object-contain mx-auto mb-6"
-            style={{ background: 'white', padding: 6, borderRadius: 12, boxShadow: '0 0 30px rgba(245,193,0,0.3)' }} />
-
-          <h2 className="font-heading font-extrabold text-white mb-4"
-            style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)' }}>
-            Comienza hoy tu trámite{' '}
-            <span style={{ color: '#F5C100' }}>sin salir de casa</span>
-          </h2>
-          <p className="text-blue-200 text-lg mb-10 leading-relaxed">
-            Únete a los ciudadanos del cantón Cañar que ya gestionan
-            sus trámites de ordenamiento territorial de forma digital.
-          </p>
-
-          <div className="flex flex-wrap gap-4 justify-center mb-16">
-            <Link to="/registro" className="btn-primary px-10 py-4">
-              Crear cuenta gratuita <ArrowRight size={20} />
-            </Link>
-            <Link to="/login"
-              className="px-10 py-4 rounded-xl font-bold text-sm border border-blue-400 text-blue-200 hover:bg-blue-900 transition-colors">
-              Iniciar sesión
-            </Link>
-          </div>
-
-          {/* Colores del escudo como firma */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            {['#CC2229','#F5C100','#22C55E','#2563EB'].map(c => (
-              <div key={c} style={{ width: 32, height: 4, background: c, borderRadius: 99, opacity: 0.7 }} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {STATS.map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-4xl font-extrabold text-blue-600 mb-1">{s.value}</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-bold">{s.label}</p>
+              </div>
             ))}
           </div>
-
-          <p className="text-blue-400 text-xs leading-relaxed">
-            © {new Date().getFullYear()} GAD Municipal de Cañar — Sistema de Ordenamiento Territorial<br />
-            Desarrollado bajo estándares de la normativa ecuatoriana de firma electrónica y protección de datos
-          </p>
         </div>
       </section>
+
+      {/* FEATURES CLARAS */}
+      <section id="servicios" className="py-20 max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-extrabold text-slate-900">Trámites Técnicos Habilitados</h2>
+          <p className="text-slate-500 mt-2 max-w-lg mx-auto text-sm leading-relaxed">
+            Gestión optimizada y control digital completo sobre las solicitudes técnicas municipales.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="p-6 rounded-3xl bg-white border border-slate-200/60 shadow-sm flex flex-col items-start space-y-4 text-left hover:shadow-md transition-shadow">
+              <div className="p-3 rounded-2xl" style={{ background: f.bg }}>
+                <f.icon size={20} style={{ color: f.color }} />
+              </div>
+              <h3 className="font-bold text-slate-800 text-lg">{f.title}</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER CLARO */}
+      <footer className="bg-slate-100 border-t border-slate-200 text-slate-600 py-12">
+        <div className="max-w-7xl mx-auto px-6 text-center space-y-4">
+          <img src="/logo-gad.png" alt="GAD Cañar" className="w-11 h-11 object-contain mx-auto" />
+          <p className="text-sm font-bold text-slate-800">
+            GAD Municipal de Cañar — Sistema de Planificación y Trámites Técnicos
+          </p>
+          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+            © {new Date().getFullYear()} GAD Cañar. Todos los derechos reservados.
+            <br />
+            Plataforma para profesionales acreditados de la construcción. Soporte de firma digital oficial del Ecuador.
+          </p>
+        </div>
+      </footer>
+
+      {/* MODAL: TRACKING DE TRÁMITE */}
+      {modalOpen && trackingResult && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+          
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-6 overflow-hidden animate-slide-up max-h-[90vh] flex flex-col text-left">
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Estado de Trámites</h3>
+                <p className="text-xs text-slate-500">Propietario: {trackingResult.ciudadano.nombre} {trackingResult.ciudadano.apellido}</p>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition-colors text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+              {trackingResult.solicitudes.map((sol: any) => {
+                const info = ESTADO_INFO[sol.estado] || { label: sol.estado, color: '#64748b', bg: '#f1f5f9', step: 1 }
+                
+                return (
+                  <div key={sol.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded">
+                          ID: #{sol.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <h4 className="font-bold text-slate-800 text-base mt-1">
+                          {TIPO_TRAMITE_LABEL[sol.tipoTramite] || sol.tipoTramite}
+                        </h4>
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <MapPin size={12} /> {sol.direccion} ({sol.ubicacion})
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold px-3 py-1.5 rounded-full w-max text-center"
+                        style={{ color: info.color, background: info.bg }}>
+                        {info.label}
+                      </span>
+                    </div>
+
+                    <div className="pt-2">
+                      <div className="relative flex justify-between items-center max-w-md mx-auto">
+                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-slate-200 z-0" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-500 z-0 transition-all duration-500" 
+                             style={{ width: `${(Math.max(0, info.step - 1) / 3) * 100}%` }} />
+
+                        {[
+                          { num: 1, label: 'Ingreso' },
+                          { num: 2, label: 'Revisión' },
+                          { num: 3, label: 'Pago Tasas' },
+                          { num: 4, label: 'Finalizado' }
+                        ].map((s) => {
+                          const isPast = info.step > s.num
+                          const isActive = info.step === s.num
+
+                          let bgCircle = 'bg-slate-200 text-slate-400'
+                          let ringClass = ''
+
+                          if (isPast) {
+                            bgCircle = 'bg-green-500 text-white'
+                          } else if (isActive) {
+                            bgCircle = 'bg-blue-600 text-white font-bold'
+                            ringClass = 'ring-4 ring-blue-500/20'
+                          }
+
+                          return (
+                            <div key={s.num} className="flex flex-col items-center relative z-10">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${bgCircle} ${ringClass}`}>
+                                {isPast ? '✓' : s.num}
+                              </div>
+                              <span className={`text-[10px] mt-1.5 font-bold ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                                {s.label}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {sol.estado === 'OBSERVADO' && sol.observaciones && (
+                      <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
+                        <p className="font-bold flex items-center gap-1.5 mb-1 text-red-900">
+                          <AlertCircle size={14} /> Observación documental a subsanar:
+                        </p>
+                        <p>{sol.observaciones}</p>
+                      </div>
+                    )}
+
+                    {sol.estado === 'RECHAZADO' && sol.motivoRechazo && (
+                      <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
+                        <p className="font-bold flex items-center gap-1.5 mb-1 text-red-900">
+                          <XCircle size={14} /> Motivo del rechazo técnico:
+                        </p>
+                        <p>{sol.motivoRechazo}</p>
+                      </div>
+                    )}
+
+                    {sol.estado === 'PENDIENTE_PAGO' && sol.cobro && (
+                      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-amber-950">Monto Liquidado a Pagar:</p>
+                          <p className="text-slate-500">{sol.cobro.concepto}</p>
+                        </div>
+                        <span className="text-lg font-black text-amber-600">${sol.cobro.monto}</span>
+                      </div>
+                    )}
+
+                    <div className="text-[10px] text-slate-400 text-right">
+                      Última actualización: {new Date(sol.updatedAt).toLocaleDateString('es-EC')} a las {new Date(sol.updatedAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="border-t pt-4 mt-4 text-center">
+              <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
+                <HelpCircle size={12} /> Para soporte adicional, contacta al departamento de Planificación GAD Cañar.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

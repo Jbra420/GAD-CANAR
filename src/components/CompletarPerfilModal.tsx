@@ -44,7 +44,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
   } = useForm<PerfilForm>({ resolver: zodResolver(perfilSchema) })
 
   // Limpiar errores al montar
-  useEffect(() => { clearError() }, [])
+  useEffect(() => { clearError() }, [clearError])
 
   const onSubmit = async (data: PerfilForm) => {
     clearError()
@@ -157,14 +157,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
                     <input
                       {...register('nombre')}
                       id="perfil-nombre"
-                      className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-                      style={{
-                        background: '#ffffff',
-                        border: '1.5px solid #e2e8f0',
-                        color: '#0f172a',
-                      }}
-                      onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)' }}
-                      onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
+                      className="input-field"
                       placeholder="Juan"
                       autoFocus
                     />
@@ -177,14 +170,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
                     <input
                       {...register('apellido')}
                       id="perfil-apellido"
-                      className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-                      style={{
-                        background: '#ffffff',
-                        border: '1.5px solid #e2e8f0',
-                        color: '#0f172a',
-                      }}
-                      onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)' }}
-                      onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
+                      className="input-field"
                       placeholder="Pérez"
                     />
                     {errors.apellido && (
@@ -201,14 +187,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
                   <input
                     {...register('cedula')}
                     id="perfil-cedula"
-                    className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-                    style={{
-                      background: '#ffffff',
-                      border: '1.5px solid #e2e8f0',
-                      color: '#0f172a',
-                    }}
-                    onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)' }}
-                    onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
+                    className="input-field"
                     placeholder="0102030405"
                     maxLength={10}
                   />
@@ -225,14 +204,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
                   <input
                     {...register('telefono')}
                     id="perfil-telefono"
-                    className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-                    style={{
-                      background: '#ffffff',
-                      border: '1.5px solid #e2e8f0',
-                      color: '#0f172a',
-                    }}
-                    onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)' }}
-                    onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
+                    className="input-field"
                     placeholder="0987654321"
                   />
                 </div>
@@ -253,14 +225,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
                           {...register('password')}
                           type={showPwd ? 'text' : 'password'}
                           id="perfil-password"
-                          className="w-full px-4 py-3 pr-12 rounded-xl text-sm font-medium outline-none transition-all"
-                          style={{
-                            background: '#ffffff',
-                            border: '1.5px solid #e2e8f0',
-                            color: '#0f172a',
-                          }}
-                          onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)' }}
-                          onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
+                          className="input-field pr-12"
                           placeholder="Mínimo 8 caracteres"
                         />
                         <button
@@ -282,14 +247,7 @@ export function CompletarPerfilModal({ onSuccess, onClose, allowClose = false }:
                         {...register('confirmPassword')}
                         type={showPwd ? 'text' : 'password'}
                         id="perfil-confirm-password"
-                        className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-                        style={{
-                          background: '#ffffff',
-                          border: '1.5px solid #e2e8f0',
-                          color: '#0f172a',
-                        }}
-                        onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)' }}
-                        onBlur={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none' }}
+                        className="input-field"
                         placeholder="Repite la contraseña"
                       />
                       {errors.confirmPassword && (

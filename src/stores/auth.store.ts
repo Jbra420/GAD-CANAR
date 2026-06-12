@@ -1,7 +1,7 @@
-import { create, type StateCreator } from 'zustand'
+import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import api from '@/lib/api'
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
 export type Role = 'SUPERADMIN' | 'CIUDADANO' | 'TECNICO' | 'SECRETARIA' | 'FINANCIERO' | 'INVITADO'
 
 export interface User {
@@ -12,7 +12,7 @@ export interface User {
   cedula?: string
   telefono?: string
   role: Role
-  zona?: 'URBANO' | 'RURAL' | null
+  zona?: 'URBANO' | 'RURAL' | null  // Solo relevante para TECNICO
   activo: boolean
   createdAt: string
 }
@@ -25,7 +25,6 @@ interface AuthState {
   error: string | null
 
   login: (email: string, password: string) => Promise<void>
-  loginAsGuest: () => void
   register: (data: RegisterData) => Promise<void>
   registerInvitado: (email: string) => Promise<void>
   completarPerfil: (data: CompletarPerfilData) => Promise<void>
@@ -50,74 +49,27 @@ export interface CompletarPerfilData {
   telefono?: string
 }
 
-// ─── Store ────────────────────────────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()(
-  (persist(
-    (set, get) => ({
+  persist(
+    (set) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
       isLoading: false,
       error: null,
 
-      login: async (email: string, password: string) => {
+      login: async (email, password) => {
         set({ isLoading: true, error: null })
         try {
-          // Intentar llamada real primero
-          // const res = await api.post('/auth/login', { email, password })
-          // ...
-          
-          // Fallback de simulación inteligente para demostración
-          let mockRole: Role = 'CIUDADANO'
-          let mockNombre = 'Juan Carlos'
-          let mockApellido = 'Guamán'
-          let mockCedula = '0302145896'
-          let mockZona: 'URBANO' | 'RURAL' | null = null
-
-          if (email.startsWith('secretaria')) {
-            mockRole = 'SECRETARIA'
-            mockNombre = 'Mariana'
-            mockApellido = 'Vélez'
-            mockCedula = '0301478529'
-          } else if (email.startsWith('tecnico.rural')) {
-            mockRole = 'TECNICO'
-            mockNombre = 'Sofía'
-            mockApellido = 'Mendieta'
-            mockCedula = '0301985472'
-            mockZona = 'RURAL'
-          } else if (email.startsWith('tecnico')) {
-            mockRole = 'TECNICO'
-            mockNombre = 'Carlos'
-            mockApellido = 'Altamirano'
-            mockCedula = '0301548721'
-            mockZona = 'URBANO'
-          } else if (email.startsWith('financiero')) {
-            mockRole = 'FINANCIERO'
-            mockNombre = 'Fernando'
-            mockApellido = 'Ordóñez'
-            mockCedula = '0302145879'
-          } else if (email.startsWith('admin')) {
-            mockRole = 'SUPERADMIN'
-            mockNombre = 'Administrador'
-            mockApellido = 'General'
-            mockCedula = '0300124578'
-          }
-
-          const mockUser: User = {
-            id: 'mock-' + mockRole.toLowerCase() + '-' + Date.now(),
-            email,
-            nombre: mockNombre,
-            apellido: mockApellido,
-            cedula: mockCedula,
-            role: mockRole,
-            zona: mockZona,
-            activo: true,
-            createdAt: new Date().toISOString(),
-          }
-          
-          const mockToken = 'mock-token-' + mockRole.toLowerCase() + '-' + Date.now()
-          localStorage.setItem('gad_access_token', mockToken)
-          set({ user: mockUser, accessToken: mockToken, refreshToken: mockToken, isLoading: false })
+          const { data } = await api.post('/auth/login', { email, password })
+          localStorage.setItem('gad_access_token', data.accessToken)
+          localStorage.setItem('gad_refresh_token', data.refreshToken)
+          set({
+            user: data.user,
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            isLoading: false,
+          })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
@@ -128,11 +80,18 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (_data: RegisterData) => {
+      register: async (data) => {
         set({ isLoading: true, error: null })
         try {
-          // TODO: conectar con API real
-          set({ isLoading: false })
+          const { data: res } = await api.post('/auth/register', data)
+          localStorage.setItem('gad_access_token', res.accessToken)
+          localStorage.setItem('gad_refresh_token', res.refreshToken)
+          set({
+            user: res.user,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+            isLoading: false,
+          })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
@@ -143,22 +102,19 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      registerInvitado: async (email: string) => {
+      // ── Registro rápido solo con email ──────────────────
+      registerInvitado: async (email) => {
         set({ isLoading: true, error: null })
         try {
-          // TODO: conectar con API real — /auth/registro-rapido
-          const mockUser: User = {
-            id: '2',
-            email,
-            nombre: 'Invitado',
-            apellido: '',
-            role: 'INVITADO',
-            activo: true,
-            createdAt: new Date().toISOString(),
-          }
-          const mockToken = 'mock-token-invitado-' + Date.now()
-          localStorage.setItem('gad_access_token', mockToken)
-          set({ user: mockUser, accessToken: mockToken, refreshToken: mockToken, isLoading: false })
+          const { data: res } = await api.post('/auth/registro-rapido', { email })
+          localStorage.setItem('gad_access_token', res.accessToken)
+          localStorage.setItem('gad_refresh_token', res.refreshToken)
+          set({
+            user: res.user,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+            isLoading: false,
+          })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
@@ -169,11 +125,19 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      completarPerfil: async (_data: CompletarPerfilData) => {
+      // ── Completar perfil INVITADO → CIUDADANO ───────────
+      completarPerfil: async (data) => {
         set({ isLoading: true, error: null })
         try {
-          // TODO: conectar con API real — /auth/completar-perfil
-          set({ isLoading: false })
+          const { data: res } = await api.post('/auth/completar-perfil', data)
+          localStorage.setItem('gad_access_token', res.accessToken)
+          localStorage.setItem('gad_refresh_token', res.refreshToken)
+          set({
+            user: res.user,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+            isLoading: false,
+          })
         } catch (err: unknown) {
           const error = err as { response?: { data?: { message?: string } } }
           set({
@@ -182,23 +146,6 @@ export const useAuthStore = create<AuthState>()(
           })
           throw err
         }
-      },
-
-      // Acceso rápido sin credenciales — solo para explorar el portal
-      // TODO (backend): puede conectarse a /auth/acceso-anonimo si el backend lo soporta
-      loginAsGuest: () => {
-        const guestUser: User = {
-          id: 'guest-' + Date.now(),
-          email: 'invitado@gadcanar.gob.ec',
-          nombre: 'Invitado',
-          apellido: '',
-          role: 'INVITADO',
-          activo: true,
-          createdAt: new Date().toISOString(),
-        }
-        const guestToken = 'guest-token-' + Date.now()
-        localStorage.setItem('gad_access_token', guestToken)
-        set({ user: guestUser, accessToken: guestToken, refreshToken: null, error: null })
       },
 
       logout: () => {
@@ -211,11 +158,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'gad-auth',
-      partialize: (state: AuthState) => ({
+      partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
       }),
     },
-  ) as unknown as StateCreator<AuthState>),
+  ),
 )

@@ -1,18 +1,22 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, FileText,
-  Bell, LogOut, ChevronDown, Menu, X, CheckCircle2
+  LayoutDashboard, FileText, PlusCircle,
+  Bell, LogOut, ChevronDown, Menu, X, CheckCircle2, HardHat, AlertCircle,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/stores/auth.store'
 import { notifApi } from '@/lib/apiCalls'
 
+// Color primario del portal arquitecto: ámbar/dorado
+const ARQCOLOR = '#D97706'
+
 const navItems = [
-  { to: '/ciudadano', icon: LayoutDashboard, label: 'Inicio', end: true },
-  { to: '/ciudadano/solicitudes', icon: FileText, label: 'Mis Solicitudes', end: true },
+  { to: '/arquitecto', icon: LayoutDashboard, label: 'Inicio', end: true },
+  { to: '/arquitecto/tramites', icon: FileText, label: 'Mis Trámites', end: true },
+  { to: '/arquitecto/tramites/nuevo', icon: PlusCircle, label: 'Nuevo Trámite', end: true },
 ]
 
-export function CiudadanoLayout() {
+export function ArquitectoLayout() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -20,12 +24,12 @@ export function CiudadanoLayout() {
   const [notifCount, setNotifCount] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (user?.role === 'INVITADO') return
-    notifApi.contador().then(({ data }) => setNotifCount(data.count)).catch(() => {})
-  }, [user?.role])
+  const esHabilitado = (user as any)?.habilitado === true
 
-  // Close dropdown when clicking outside
+  useEffect(() => {
+    notifApi.contador().then(({ data }) => setNotifCount(data.count)).catch(() => {})
+  }, [])
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -41,20 +45,22 @@ export function CiudadanoLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-blue-950">
-      
+
       {/* ── TOPBAR CLARO ── */}
       <header className="sticky top-0 z-50 px-4 md:px-8 h-20 flex items-center justify-between bg-white border-b border-slate-200 shadow-sm transition-all">
-        
+
         {/* LEFT: Branding */}
         <div className="flex items-center gap-3">
-          <img src="/logo-gad.png" alt="GAD" className="w-10 h-10 object-contain rounded-xl"
-            style={{ background: 'white', padding: '2px', boxShadow: '0 2px 10px rgba(37,99,235,0.1)' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`, boxShadow: `0 2px 10px rgba(217,119,6,0.2)` }}>
+            <HardHat size={20} className="text-white" />
+          </div>
           <div>
             <p className="font-heading font-black text-blue-600 text-sm tracking-wide">GAD CAÑAR</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#2563EB' }} />
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: ARQCOLOR }} />
               <p className="text-slate-500" style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em' }}>
-                PORTAL CIUDADANO
+                PORTAL PROFESIONAL
               </p>
             </div>
           </div>
@@ -62,7 +68,7 @@ export function CiudadanoLayout() {
 
         {/* CENTER: Navigation (Desktop) */}
         <nav className="hidden lg:flex items-center gap-2 p-1 rounded-full"
-          style={{ background: 'rgba(37,99,235,0.03)', border: '1px solid rgba(37,99,235,0.08)' }}>
+          style={{ background: `rgba(217,119,6,0.03)`, border: `1px solid rgba(217,119,6,0.08)` }}>
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -70,11 +76,11 @@ export function CiudadanoLayout() {
               end={item.end}
               className={({ isActive }) => `
                 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300
-                ${isActive ? 'text-white' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'}
+                ${isActive ? 'text-white' : 'text-slate-600 hover:text-amber-600 hover:bg-slate-50'}
               `}
               style={({ isActive }) => isActive ? {
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                boxShadow: '0 4px 12px rgba(37,99,235,0.2)'
+                background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`,
+                boxShadow: `0 4px 12px rgba(217,119,6,0.2)`
               } : {}}
             >
               <item.icon size={16} />
@@ -85,9 +91,18 @@ export function CiudadanoLayout() {
 
         {/* RIGHT: Actions */}
         <div className="flex items-center gap-4">
-          
+
+          {/* Not-habilitado warning */}
+          {!esHabilitado && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#D97706' }}>
+              <AlertCircle size={12} />
+              Pendiente habilitación
+            </div>
+          )}
+
           {/* Notifications */}
-          <button className="relative p-2.5 rounded-xl transition-all hidden sm:block text-slate-600 hover:text-blue-600 hover:bg-slate-50">
+          <button className="relative p-2.5 rounded-xl transition-all hidden sm:block text-slate-600 hover:text-amber-600 hover:bg-slate-50">
             <Bell size={20} />
             {notifCount > 0 && (
               <span className="absolute top-1.5 right-1.5 text-white font-bold animate-pulse"
@@ -99,16 +114,16 @@ export function CiudadanoLayout() {
 
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-3 p-1.5 pr-3 rounded-full transition-all border border-slate-200"
-              style={{ 
-                background: dropdownOpen ? 'rgba(37,99,235,0.05)' : 'rgba(37,99,235,0.01)',
+              style={{
+                background: dropdownOpen ? `rgba(217,119,6,0.05)` : `rgba(217,119,6,0.01)`,
               }}
             >
               <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
-                style={{ background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: 'white', boxShadow: '0 2px 8px rgba(37,99,235,0.2)' }}>
-                {initials}
+                style={{ background: `linear-gradient(135deg, ${ARQCOLOR} 0%, #B45309 100%)`, color: 'white', boxShadow: `0 2px 8px rgba(217,119,6,0.2)` }}>
+                {initials || <HardHat size={14} />}
               </div>
               <span className="text-slate-700 text-sm font-semibold hidden sm:block">
                 {user?.nombre?.split(' ')[0]}
@@ -116,26 +131,28 @@ export function CiudadanoLayout() {
               <ChevronDown size={14} className={`transition-transform duration-300 text-slate-400 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Dropdown Menu */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-3 w-64 rounded-2xl overflow-hidden animate-slide-up origin-top-right bg-white border border-slate-200 shadow-xl z-50">
-                <div className="p-4 border-b border-slate-100 text-left">
+              <div className="absolute right-0 mt-3 w-72 rounded-2xl overflow-hidden animate-slide-up origin-top-right bg-white border border-slate-200 shadow-xl z-50 text-left">
+                <div className="p-4 border-b border-slate-100">
                   <p className="text-slate-800 font-bold">{user?.nombre} {user?.apellido}</p>
-                  <p className="text-xs mt-0.5 truncate text-blue-600 font-semibold">{user?.email}</p>
+                  <p className="text-xs mt-0.5 truncate text-amber-600 font-semibold">{user?.email}</p>
+                  {(user as any)?.titulo && (
+                    <p className="text-xs mt-1 text-slate-500 font-medium">
+                      {(user as any).titulo} • Reg. {(user as any).numeroRegistro}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 mt-3 px-2 py-1.5 rounded-lg w-max"
-                    style={{ background: user?.role === 'INVITADO' ? 'rgba(245,158,11,0.08)' : 'rgba(34,197,94,0.08)' }}>
-                    <CheckCircle2 size={12} style={{ color: user?.role === 'INVITADO' ? '#D97706' : '#16A34A' }} />
+                    style={{ background: esHabilitado ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)' }}>
+                    <CheckCircle2 size={12} style={{ color: esHabilitado ? '#16A34A' : '#D97706' }} />
                     <span style={{
-                      color: user?.role === 'INVITADO' ? '#D97706' : '#16A34A',
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
+                      color: esHabilitado ? '#16A34A' : '#D97706',
+                      fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase',
                     }}>
-                      {user?.role === 'INVITADO' ? 'Perfil pendiente' : 'Ciudadano verificado'}
+                      {esHabilitado ? 'Habilitado por el GAD' : 'Pendiente de habilitación'}
                     </span>
                   </div>
                 </div>
-                <div className="p-2 text-left">
+                <div className="p-2">
                   <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-red-500 hover:bg-red-50">
                     <LogOut size={16} />
                     <span className="font-semibold text-sm">Cerrar Sesión</span>
@@ -150,11 +167,10 @@ export function CiudadanoLayout() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-
         </div>
       </header>
 
-      {/* ── MOBILE MENU OVERLAY ── */}
+      {/* ── MOBILE MENU ── */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-40 pt-20 px-4 pb-6 flex flex-col bg-white/98 backdrop-blur-md">
           <nav className="flex-1 space-y-2 mt-4 text-left">
@@ -166,7 +182,7 @@ export function CiudadanoLayout() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) => `
                   flex items-center gap-3 px-4 py-4 rounded-2xl text-base font-semibold transition-all
-                  ${isActive ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'}
+                  ${isActive ? 'text-amber-600 bg-amber-50/50' : 'text-slate-600 hover:text-amber-600 hover:bg-slate-50'}
                 `}
               >
                 <item.icon size={20} />
@@ -181,13 +197,12 @@ export function CiudadanoLayout() {
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 overflow-auto animate-fade-in relative z-10">
         <Outlet />
       </main>
-      
+
       {/* Background Decorators */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.03] blur-[120px]" style={{ background: '#2563EB' }} />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] rounded-full opacity-[0.02] blur-[100px]" style={{ background: '#2563EB' }} />
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.025] blur-[120px]" style={{ background: ARQCOLOR }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] rounded-full opacity-[0.015] blur-[100px]" style={{ background: ARQCOLOR }} />
       </div>
-
     </div>
   )
 }
